@@ -4,6 +4,7 @@ __pycache__/
 venv/
 *.pyc
 /media/
+vscode/
 
 # SQLite database files
 
