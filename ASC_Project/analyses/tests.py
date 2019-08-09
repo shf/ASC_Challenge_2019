@@ -216,7 +216,7 @@ class SectionTest(TestCase):
 
     def test_section_valid_section_data(self):
         url = reverse('section', kwargs={'slug': 'test'}) 
-        form = NewSectionForm({'name': 'section_test', 'material':1})
+        form = NewSectionForm({'name': 'section_test', 'material':1}, analysis=self.analysis)
 
         self.assertTrue(form.is_valid())
 
@@ -255,7 +255,24 @@ class SectionTest(TestCase):
 
 class StepTest(TestCase):
     def setUp(self):
-        Analysis.objects.create(name='test', description='Test analysis.')
+        self.analysis = Analysis.objects.create(name='test', description='Test analysis.')
+        mesh = SimpleUploadedFile("mesh.xml", b"file_content", content_type="mesh/xml")
+        self.mesh = Mesh.objects.create(name='mesh_test', address=mesh, analysis=self.analysis)
+        os.remove(self.mesh.address.path)
+        self.material = Material.objects.create(
+            id = 1,
+            name= 'test_material',
+            typ= 0,
+            viscosity= 1000,
+            permeability= 2000,
+            analysis = self.analysis,
+        )
+        self.section = Section.objects.create(
+            id = 1,
+            name = 'section_test',
+            material=self.material,
+            analysis = self.analysis,
+        )
 
     def test_step_view_status_code(self):
         url = reverse('step', kwargs={'slug': 'test'})

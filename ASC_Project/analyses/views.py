@@ -14,6 +14,7 @@ from .forms import NewAnalysisForm
 from .forms import NewMeshForm
 from .forms import NewMaterialForm
 from .forms import NewSectionForm
+from .forms import NewStepForm
 
 
 def home(request):
@@ -60,7 +61,7 @@ def material_page(request, slug):
 def section_page(request, slug):
     analysis = get_object_or_404(Analysis, name = slug)
     if request.method == 'POST':
-        form = NewSectionForm(request.POST)
+        form = NewSectionForm(request.POST, analysis=analysis)
         if form.is_valid():
             section = form.save(commit=False)
             section.analysis = analysis
@@ -68,11 +69,28 @@ def section_page(request, slug):
 
             return redirect('step', slug = analysis.name) 
     else:
-        form = NewSectionForm()
-    return render(request, 'section.html', {'analysis': analysis, 'mesh':analysis.mesh, 'materials':analysis.material.all(), 'form': form})
+        form = NewSectionForm(analysis=analysis)
+    return render(request, 'section.html', 
+            {'analysis': analysis, 'mesh':analysis.mesh, 'materials':analysis.material.all(), 'form': form}
+        )
 
 def step_page(request, slug):
-    return render(request, 'step.html')
+    analysis = get_object_or_404(Analysis, name = slug)
+    if request.method == 'POST':
+        form = NewStepForm(request.POST)
+        if form.is_valid():
+            section = form.save(commit=False)
+            section.analysis = analysis
+            section.save()
+
+            return redirect('bc', slug = analysis.name) 
+    else:
+        form = NewStepForm()
+    return render(
+            request, 'step.html', 
+            {'analysis': analysis, 'mesh':analysis.mesh, 'materials':analysis.material.all(), 
+            'sections':analysis.section.all(), 'form': form}
+        )
 
 def bc_page(request, slug):
     return render(request, 'bc.html')

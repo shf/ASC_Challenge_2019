@@ -7,6 +7,48 @@
 
 {% block content %}
 
-This is step page
+<table class="table">
+  <thead class="thead-inverse">
+    <tr>
+      <th>Parameter</th>
+      <th>Variables</th>
+    </tr>
+  </thead>
+  <tbody>
+      <tr>
+          <td class="align-middle">Analysis</td>
+          <td class="align-middle">{{ analysis.name }}</td>
+      </tr>
+      <tr>
+          <td class="align-middle">Mesh</td>
+          <td class="align-middle">{{ mesh.name }}</td>
+      </tr>
+      <tr>
+          <td class="align-middle">Materials</td>
+          
+          <td class="align-middle">
+            {% for material in materials %}
+              {{ material.name }}, 
+            {% endfor %}
+          </td>
+      </tr>
+
+      <tr>
+        <td class="align-middle">Sections</td>
+        
+        <td class="align-middle">
+          {% for section in sections %}
+            {{ section.name }}, 
+          {% endfor %}
+        </td>
+    </tr>
+  </tbody>
+</table>
+
+<form method="post" validate>
+  {% csrf_token %}  
+  {% include 'includes/form.html' %}
+  <button type="submit" class="btn btn-success">Create</button>
+</form>
 
 {% endblock %}
