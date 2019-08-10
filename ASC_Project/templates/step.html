@@ -24,24 +24,27 @@
           <td class="align-middle">{{ mesh.name }}</td>
       </tr>
       <tr>
-          <td class="align-middle">Materials</td>
+        <td class="align-middle">Resin</td>
+        <td class="align-middle">{{ resin.name }}</td>
+      </tr>
+      <tr>
+          <td class="align-middle">Preforms</td>
           
           <td class="align-middle">
-            {% for material in materials %}
-              {{ material.name }}, 
+            {% for preform in preforms %}
+              {{ preform.name }} <br>
             {% endfor %}
           </td>
       </tr>
-
       <tr>
         <td class="align-middle">Sections</td>
         
         <td class="align-middle">
           {% for section in sections %}
-            {{ section.name }}, 
+            {{ section.name }} <br>
           {% endfor %}
         </td>
-    </tr>
+      </tr>
   </tbody>
 </table>
 

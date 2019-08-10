@@ -7,7 +7,7 @@
 
 {% block breadcrumb %}
   <li class="breadcrumb-item"><a href="{% url 'home' %}">{{ analysis.name }}</a></li>
-  <li class="breadcrumb-item active">Creating Section</li>
+  <li class="breadcrumb-item active">Creating Preform</li>
 {% endblock %}
 
 {% block content %}
@@ -32,15 +32,6 @@
           <td class="align-middle">Resin</td>
           <td class="align-middle">{{ resin.name }}</td>
       </tr>
-        <tr>
-            <td class="align-middle">Preform</td>
-            
-            <td class="align-middle">
-              {% for preform in preforms %}
-                {{ preform.name }} <br> 
-              {% endfor %}
-            </td>
-        </tr>
     </tbody>
 </table>
 
