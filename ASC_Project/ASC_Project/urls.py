@@ -34,6 +34,7 @@ urlpatterns = [
     url(r'^(?P<slug>[-\w]+)/bc/$', views.bc_page, name='bc'),
     url(r'^(?P<slug>[-\w]+)/submit/$', views.submit_page, name='submit'),
     url(r'^(?P<slug>[-\w]+)/result/$', views.result_page, name='result'),
+    url(r'^meshdisplay/$', views.display_mesh, name='meshdisplay'),
 ]
 
 if settings.DEBUG:
