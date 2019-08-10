@@ -1,5 +1,5 @@
 import fenics as fn
-from mesh.Importers import MeshImport
+from .Importers import MeshImport
 
 ImportedMesh = MeshImport("./UserFiles/MeshUNV.unv")
 ImportedMesh.UNVtoXMLConverter()
