@@ -1,11 +1,11 @@
 import fenics as fn
 from mesh.Importers import MeshImport
 
-ImportedMesh = MeshImport("./mesh/MeshUNV.unv")
+ImportedMesh = MeshImport("./UserFiles/MeshUNV.unv")
 ImportedMesh.UNVtoXMLConverter()
 Edges, Faces = ImportedMesh.MeshGroups()
 
-mesh = fn.Mesh("./mesh/mesh.xml")
+mesh = fn.Mesh("./UserFiles/mesh.xml")
 
 # Create subdomains
 BoundaryEdges = fn.BoundaryMesh(mesh, 'exterior').entity_map(1).array()
@@ -37,5 +37,5 @@ for num, (key, value) in enumerate(Faces.items(),1):
             if all(item in value for item in entity):
                 sections[cell.index()]=num
 
-fn.File("./mesh/boundaries.pvd") << boundaries
-fn.File("./mesh/sections.pvd") << sections
+fn.File("./UserFiles/boundaries.pvd") << boundaries
+fn.File("./UserFiles/sections.pvd") << sections

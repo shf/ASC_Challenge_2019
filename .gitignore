@@ -5,6 +5,7 @@ venv/
 *.pyc
 /media/
 vscode/
+UserFiles/
 
 # SQLite database files
 
