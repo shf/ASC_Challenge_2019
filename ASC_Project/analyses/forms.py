@@ -1,10 +1,15 @@
 from django import forms
 from .models import Analysis
 from .models import Mesh
-from .models import Material
+from .models import Resin
+from .models import Preform
 from .models import Section
 from .models import Step
 from .models import BC
+
+from .choice import TYPE_OF_ANALYSIS
+from .choice import TYPE_OF_BC
+
 
 class NewAnalysisForm(forms.ModelForm):
     class Meta:
@@ -16,25 +21,41 @@ class NewMeshForm(forms.ModelForm):
         model = Mesh
         fields = ['name', 'address']
 
-
-class NewMaterialForm(forms.ModelForm):
+class NewResinForm(forms.ModelForm):
     class Meta:
-        model = Material
-        fields = ['name', 'typ', 'viscosity', 'permeability']
+        model = Resin
+        fields = ['name', 'viscosity']
+
+class NewPreformForm(forms.ModelForm):
+    class Meta:
+        model = Preform
+        fields = ['name', 'thickness', 'K11', 'K12', 'K22']
 
 class NewSectionForm(forms.ModelForm):
     class Meta:
         model = Section
-        fields = ['name', 'material']
+        fields = ['name', 'preform', 'rotate']
 
-    material = forms.ModelChoiceField(queryset = None, initial=0)
+    preform = forms.ModelChoiceField(queryset = None, initial=0)
 
     def __init__(self, *args, **kwargs):
         self.analysis = kwargs.pop('analysis')
         super(NewSectionForm, self).__init__(*args, **kwargs)
-        self.fields['material'].queryset = Material.objects.filter(analysis=self.analysis)
+        self.fields['preform'].queryset = Preform.objects.filter(analysis=self.analysis)
 
 class NewStepForm(forms.ModelForm):
     class Meta:
         model = Step
-        fields = ['name']
+        fields = ['name', 'typ', 'endtime']
+    
+    typ = forms.ChoiceField(choices = TYPE_OF_ANALYSIS)
+
+class NewBCForm(forms.ModelForm):
+    class Meta:
+        model = BC
+        fields = ['name', 'typ', 'value']
+    
+    typ = forms.ChoiceField(choices = TYPE_OF_BC)
+
+
+

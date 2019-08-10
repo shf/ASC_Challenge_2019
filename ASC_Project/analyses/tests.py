@@ -8,7 +8,8 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 
 from .views import home
 from .views import mesh_page
-from .views import material_page
+from .views import resin_page
+from .views import preform_page
 from .views import section_page
 from .views import step_page
 from .views import bc_page
@@ -17,8 +18,11 @@ from .views import result_page
 
 from .models import Analysis
 from .models import Mesh
-from .models import Material
+from .models import Resin
+from .models import Preform
 from .models import Section
+from .models import Step
+from .models import BC
 
 from .forms import NewSectionForm
 
@@ -121,7 +125,7 @@ class MeshTests(TestCase):
 
     def test_mesh_view_contains_create_button(self):
         url = reverse('mesh', kwargs={'slug': 'test'})
-        url_material = reverse('material', kwargs={'slug': 'test'})
+        url_resin = reverse('resin', kwargs={'slug': 'test'})
         mesh = SimpleUploadedFile("mesh.xml", b"file_content", content_type="mesh/xml")
 
         data = {
@@ -129,63 +133,115 @@ class MeshTests(TestCase):
             'address': mesh
         }
         response = self.client.post(url, data)
-        self.assertRedirects(response, '{0}'.format(url_material))
+        self.assertRedirects(response, '{0}'.format(url_resin))
 
         mesh = Mesh.objects.get(name="test_mesh")
         os.remove(mesh.address.path)
 
-class MaterialTest(TestCase):
+class ResinTest(TestCase):
     def setUp(self):
         self.analysis = Analysis.objects.create(name='test', description='Test analysis.')
         mesh = SimpleUploadedFile("mesh.xml", b"file_content", content_type="mesh/xml")
         self.mesh = Mesh.objects.create(name='mesh_test', address=mesh, analysis=self.analysis)
         os.remove(self.mesh.address.path)
 
-    def test_material_view_status_code(self):
-        url = reverse('material', kwargs={'slug': 'test'})
+    def test_resin_view_status_code(self):
+        url = reverse('resin', kwargs={'slug': 'test'})
         response = self.client.get(url)
         self.assertEquals(response.status_code, 200)
 
-    def test_material_url_resolves_material_view(self):
-        view = resolve('/test/material_submit/')
-        self.assertEquals(view.func, material_page)
+    def test_resin_url_resolves_resin_view(self):
+        view = resolve('/test/resin/')
+        self.assertEquals(view.func, resin_page)
 
-    def test_material_valid_material_data(self):
-        url = reverse('material', kwargs={'slug': 'test'})
+    def test_resin_valid_resin_data(self):
+        url = reverse('resin', kwargs={'slug': 'test'})
         data = {
-            'name': 'test_material',
-            'typ': 0,
+            'name': 'test_resin',
             'viscosity': 1000,
-            'permeability': 2000,
         }
         response = self.client.post(url, data)
-        self.assertTrue(Material.objects.exists())
+        self.assertTrue(Resin.objects.exists())
 
-    def test_material_invalid_material_data(self):
-        url = reverse('material', kwargs={'slug': 'test'})
+    def test_resin_invalid_resin_data(self):
+        url = reverse('resin', kwargs={'slug': 'test'})
         response = self.client.post(url, {})
         self.assertEquals(response.status_code, 200)
 
-    def test_material_invalid_material_data_empty_fields(self):
-        url = reverse('material', kwargs={'slug': 'test'})
+    def test_resin_invalid_resin_data_empty_fields(self):
+        url = reverse('resin', kwargs={'slug': 'test'})
         data = {
             'name': '',
-            'typ': '',
             'viscosity': '',
-            'permeability': '',
-
         }
         response = self.client.post(url, data)
-        self.assertFalse(Material.objects.exists())
+        self.assertFalse(Resin.objects.exists())
 
-    def test_material_view_contains_create_button(self):
-        url = reverse('material', kwargs={'slug': 'test'})
+    def test_resin_view_contains_create_button(self):
+        url = reverse('resin', kwargs={'slug': 'test'})
+        url_preform = reverse('preform', kwargs={'slug': 'test'})
+        data = {
+            'name': 'test_resin2',
+            'viscosity': 1000,
+        }
+        response = self.client.post(url, data)
+        self.assertRedirects(response, '{0}'.format(url_preform))
+
+class PreformTest(TestCase):
+    def setUp(self):
+        self.analysis = Analysis.objects.create(name='test', description='Test analysis.')
+        mesh = SimpleUploadedFile("mesh.xml", b"file_content", content_type="mesh/xml")
+        self.mesh = Mesh.objects.create(name='mesh_test', address=mesh, analysis=self.analysis)
+        self.resin = Resin.objects.create(name='test_resin', viscosity= 1000, analysis=self.analysis)
+        os.remove(self.mesh.address.path)
+
+    def test_preform_view_status_code(self):
+        url = reverse('preform', kwargs={'slug': 'test'})
+        response = self.client.get(url)
+        self.assertEquals(response.status_code, 200)
+
+    def test_preform_url_resolves_preform_view(self):
+        view = resolve('/test/preform/')
+        self.assertEquals(view.func, preform_page)
+
+    def test_preform_valid_preform_data(self):
+        url = reverse('preform', kwargs={'slug': 'test'})
+        data = {
+            'name': 'test_preform',
+            'thickness': 0.1,
+            'K11': 1e-9,
+            'K12': 0.0,
+            'K22': 1e-8,
+        }
+        response = self.client.post(url, data)
+        self.assertTrue(Preform.objects.exists())
+
+    def test_preform_invalid_preform_data(self):
+        url = reverse('preform', kwargs={'slug': 'test'})
+        response = self.client.post(url, {})
+        self.assertEquals(response.status_code, 200)
+
+    def test_preform_invalid_preform_data_empty_fields(self):
+        url = reverse('preform', kwargs={'slug': 'test'})
+        data = {
+            'name': '',
+            'thickness': '',
+            'K11': '',
+            'K12': '',
+            'K22': '',
+        }
+        response = self.client.post(url, data)
+        self.assertFalse(Preform.objects.exists())
+
+    def test_preform_view_contains_create_button(self):
+        url = reverse('preform', kwargs={'slug': 'test'})
         url_section = reverse('section', kwargs={'slug': 'test'})
         data = {
-            'name': 'test_material2',
-            'typ': 0,
-            'viscosity': 1000,
-            'permeability': 2000,
+            'name': 'test_preform2',
+            'thickness': 0.1,
+            'K11': 1e-9,
+            'K12': 0.0,
+            'K22': 1e-8,
         }
         response = self.client.post(url, data)
         self.assertRedirects(response, '{0}'.format(url_section))
@@ -196,13 +252,20 @@ class SectionTest(TestCase):
         mesh = SimpleUploadedFile("mesh.xml", b"file_content", content_type="mesh/xml")
         self.mesh = Mesh.objects.create(name='mesh_test', address=mesh, analysis=self.analysis)
         os.remove(self.mesh.address.path)
-        self.material = Material.objects.create(
+        self.resin = Resin.objects.create(
             id = 1,
-            name= 'test_material',
-            typ= 0,
+            name= 'test_resin',
             viscosity= 1000,
-            permeability= 2000,
-            analysis = self.analysis
+            analysis = self.analysis,
+        )
+        self.preform = Preform.objects.create(
+            id = 1,
+            name = 'test_preform',
+            thickness = 1.0,
+            K11 = 1e-10,
+            K12 = 0.0,
+            K22 = 2e-10,
+            analysis = self.analysis,
         )
 
     def test_section_view_status_code(self):
@@ -211,18 +274,19 @@ class SectionTest(TestCase):
         self.assertEquals(response.status_code, 200)
 
     def test_section_url_resolves_section_view(self):
-        view = resolve('/test/section_submit/')
+        view = resolve('/test/section/')
         self.assertEquals(view.func, section_page)
 
     def test_section_valid_section_data(self):
         url = reverse('section', kwargs={'slug': 'test'}) 
-        form = NewSectionForm({'name': 'section_test', 'material':1}, analysis=self.analysis)
+        form = NewSectionForm({'name': 'section_test', 'preform':1, 'rotate':45}, analysis=self.analysis)
 
         self.assertTrue(form.is_valid())
 
         data = {
-            'name': 'section_test2',
-            'material':1
+            'name': 'section_test',
+            'preform':1,
+            'rotate':45,
         }
 
         response = self.client.post(url, data)
@@ -237,21 +301,22 @@ class SectionTest(TestCase):
         url = reverse('section', kwargs={'slug': 'test'})
         data = {
             'name': '',
-            'material': '',
-
+            'preform': '',
+            'rotate': '',
         }
         response = self.client.post(url, data)
         self.assertFalse(Section.objects.exists())
 
     def test_section_view_contains_create_button(self):
         url = reverse('section', kwargs={'slug': 'test'})
-        url_section = reverse('step', kwargs={'slug': 'test'})
+        url_step = reverse('step', kwargs={'slug': 'test'})
         data = {
-            'name': 'section_test',
-            'material':1
+            'name': 'section_test2',
+            'preform': 1,
+            'rotate': 45,
         }
         response = self.client.post(url, data)
-        self.assertRedirects(response, '{0}'.format(url_section))
+        self.assertRedirects(response, '{0}'.format(url_step))
 
 class StepTest(TestCase):
     def setUp(self):
@@ -259,18 +324,26 @@ class StepTest(TestCase):
         mesh = SimpleUploadedFile("mesh.xml", b"file_content", content_type="mesh/xml")
         self.mesh = Mesh.objects.create(name='mesh_test', address=mesh, analysis=self.analysis)
         os.remove(self.mesh.address.path)
-        self.material = Material.objects.create(
+        self.resin = Resin.objects.create(
             id = 1,
-            name= 'test_material',
-            typ= 0,
+            name= 'test_resin',
             viscosity= 1000,
-            permeability= 2000,
+            analysis = self.analysis,
+        )
+        self.preform = Preform.objects.create(
+            id = 1,
+            name= 'test_preform',
+            thickness = 0.1,
+            K11 = 1e-10,
+            K12 = 0.0,
+            K22 = 2e-10,
             analysis = self.analysis,
         )
         self.section = Section.objects.create(
             id = 1,
             name = 'section_test',
-            material=self.material,
+            preform=self.preform,
+            rotate = 45,
             analysis = self.analysis,
         )
 
@@ -283,9 +356,78 @@ class StepTest(TestCase):
         view = resolve('/test/step/')
         self.assertEquals(view.func, step_page)
 
+    def test_step_valid_step_data(self):
+        url = reverse('step', kwargs={'slug': 'test'}) 
+        data = {
+            'name': 'step_test',
+            'typ':0,
+            'endtime':100,
+        }
+
+        response = self.client.post(url, data)
+        self.assertTrue(Step.objects.exists())
+
+    def test_step_invalid_step_data(self):
+        url = reverse('step', kwargs={'slug': 'test'})
+        response = self.client.post(url, {})
+        self.assertEquals(response.status_code, 200)
+
+    def test_step_invalid_step_data_empty_fields(self):
+        url = reverse('step', kwargs={'slug': 'test'})
+        data = {
+            'name': '',
+            'typ': '',
+            'endtime': '',
+        }
+        response = self.client.post(url, data)
+        self.assertFalse(Step.objects.exists())
+
+    def test_step_view_contains_create_button(self):
+        url = reverse('step', kwargs={'slug': 'test'})
+        url_bc = reverse('bc', kwargs={'slug': 'test'})
+        data = {
+            'name': 'step_test2',
+            'typ': 1,
+            'endtime': 200,
+        }
+        response = self.client.post(url, data)
+        self.assertRedirects(response, '{0}'.format(url_bc))
+
 class BCTest(TestCase):
     def setUp(self):
-        Analysis.objects.create(name='test', description='Test analysis.')
+        self.analysis = Analysis.objects.create(name='test', description='Test analysis.')
+        mesh = SimpleUploadedFile("mesh.xml", b"file_content", content_type="mesh/xml")
+        self.mesh = Mesh.objects.create(name='mesh_test', address=mesh, analysis=self.analysis)
+        os.remove(self.mesh.address.path)
+        self.resin = Resin.objects.create(
+            id = 1,
+            name= 'test_resin',
+            viscosity= 1000,
+            analysis = self.analysis,
+        )
+        self.preform = Preform.objects.create(
+            id = 1,
+            name= 'test_preform',
+            thickness = 0.1,
+            K11 = 1e-10,
+            K12 = 0.0,
+            K22 = 2e-10,
+            analysis = self.analysis,
+        )
+        self.section = Section.objects.create(
+            id = 1,
+            name = 'section_test',
+            preform=self.preform,
+            rotate = 45,
+            analysis = self.analysis,
+        )
+        self.step = Step.objects.create(
+            id = 1,
+            name = 'step_test',
+            typ = 1,
+            endtime = 200,
+            analysis = self.analysis,
+        )
 
     def test_bc_view_status_code(self):
         url = reverse('bc', kwargs={'slug': 'test'})
@@ -296,9 +438,85 @@ class BCTest(TestCase):
         view = resolve('/test/bc/')
         self.assertEquals(view.func, bc_page)
 
+    def test_bc_valid_step_data(self):
+        url = reverse('bc', kwargs={'slug': 'test'}) 
+        data = {
+            'name': 'bc_test',
+            'typ':0,
+            'value':100000,
+        }
+
+        response = self.client.post(url, data)
+        self.assertTrue(BC.objects.exists())
+
+    def test_step_invalid_step_data(self):
+        url = reverse('bc', kwargs={'slug': 'test'})
+        response = self.client.post(url, {})
+        self.assertEquals(response.status_code, 200)
+
+    def test_step_invalid_step_data_empty_fields(self):
+        url = reverse('bc', kwargs={'slug': 'test'})
+        data = {
+            'name': '',
+            'typ': '',
+            'value': '',
+        }
+        response = self.client.post(url, data)
+        self.assertFalse(BC.objects.exists())
+
+    def test_step_view_contains_create_button(self):
+        url = reverse('bc', kwargs={'slug': 'test'})
+        url_submit = reverse('submit', kwargs={'slug': 'test'})
+        data = {
+            'name': 'bc_test2',
+            'typ': 1,
+            'value': 200,
+        }
+        response = self.client.post(url, data)
+        self.assertRedirects(response, '{0}'.format(url_submit))
+
 class SubmitTest(TestCase):
     def setUp(self):
-        Analysis.objects.create(name='test', description='Test analysis.')
+        self.analysis = Analysis.objects.create(name='test', description='Test analysis.')
+        mesh = SimpleUploadedFile("mesh.xml", b"file_content", content_type="mesh/xml")
+        self.mesh = Mesh.objects.create(name='mesh_test', address=mesh, analysis=self.analysis)
+        os.remove(self.mesh.address.path)
+        self.resin = Resin.objects.create(
+            id = 1,
+            name= 'test_resin',
+            viscosity= 1000,
+            analysis = self.analysis,
+        )
+        self.preform = Preform.objects.create(
+            id = 1,
+            name= 'test_preform',
+            thickness = 0.1,
+            K11 = 1e-10,
+            K12 = 0.0,
+            K22 = 2e-10,
+            analysis = self.analysis,
+        )
+        self.section = Section.objects.create(
+            id = 1,
+            name = 'section_test',
+            preform=self.preform,
+            rotate = 45,
+            analysis = self.analysis,
+        )
+        self.step = Step.objects.create(
+            id = 1,
+            name = 'step_test',
+            typ = 1,
+            endtime = 200,
+            analysis = self.analysis,
+        )
+        self.bc = BC.objects.create(
+            id = 1,
+            name = 'bc_test',
+            typ = 1,
+            value = 100,
+            analysis = self.analysis,
+        )
 
     def test_submit_view_status_code(self):
         url = reverse('submit', kwargs={'slug': 'test'})
@@ -311,7 +529,7 @@ class SubmitTest(TestCase):
 
 class ResultTest(TestCase):
     def setUp(self):
-        Analysis.objects.create(name='test', description='Test analysis.')
+        self.analysis = Analysis.objects.create(name='test', description='Test analysis.')
 
     def test_result_view_status_code(self):
         url = reverse('result', kwargs={'slug': 'test'})

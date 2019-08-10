@@ -5,16 +5,19 @@ from django.core.files.storage import FileSystemStorage
 
 from .models import Analysis
 from .models import Mesh
-from .models import Material
+from .models import Resin
+from .models import Preform
 from .models import Section
 from .models import Step
 from .models import BC
 
 from .forms import NewAnalysisForm
 from .forms import NewMeshForm
-from .forms import NewMaterialForm
+from .forms import NewResinForm
+from .forms import NewPreformForm
 from .forms import NewSectionForm
 from .forms import NewStepForm
+from .forms import NewBCForm
 
 
 def home(request):
@@ -39,24 +42,38 @@ def mesh_page(request, slug):
             mesh.analysis = analysis
             mesh.save()
 
-            return redirect('material', slug = analysis.name)
+            return redirect('resin', slug = analysis.name)
     else:
         form = NewMeshForm()
     return render(request, 'mesh.html', {'analysis': analysis, 'form': form}) 
 
-def material_page(request, slug):
+def resin_page(request, slug):
     analysis = get_object_or_404(Analysis, name = slug)
     if request.method == 'POST':
-        form = NewMaterialForm(request.POST)
+        form = NewResinForm(request.POST)
         if form.is_valid():
-            material = form.save(commit=False)
-            material.analysis = analysis
-            material.save()
+            resin = form.save(commit=False)
+            resin.analysis = analysis
+            resin.save()
+
+            return redirect('preform', slug = analysis.name) 
+    else:
+        form = NewResinForm()
+    return render(request, 'resin.html', {'analysis': analysis, 'mesh':analysis.mesh, 'form': form})
+
+def preform_page(request, slug):
+    analysis = get_object_or_404(Analysis, name = slug)
+    if request.method == 'POST':
+        form = NewPreformForm(request.POST)
+        if form.is_valid():
+            preform = form.save(commit=False)
+            preform.analysis = analysis
+            preform.save()
 
             return redirect('section', slug = analysis.name) 
     else:
-        form = NewMaterialForm()
-    return render(request, 'material.html', {'analysis': analysis, 'mesh':analysis.mesh, 'form': form})
+        form = NewPreformForm()
+    return render(request, 'preform.html', {'analysis': analysis, 'mesh':analysis.mesh, 'resin':analysis.resin, 'form': form})
 
 def section_page(request, slug):
     analysis = get_object_or_404(Analysis, name = slug)
@@ -71,7 +88,7 @@ def section_page(request, slug):
     else:
         form = NewSectionForm(analysis=analysis)
     return render(request, 'section.html', 
-            {'analysis': analysis, 'mesh':analysis.mesh, 'materials':analysis.material.all(), 'form': form}
+            {'analysis': analysis, 'mesh':analysis.mesh, 'resin':analysis.resin, 'preforms':analysis.preform.all(), 'form': form}
         )
 
 def step_page(request, slug):
@@ -79,24 +96,48 @@ def step_page(request, slug):
     if request.method == 'POST':
         form = NewStepForm(request.POST)
         if form.is_valid():
-            section = form.save(commit=False)
-            section.analysis = analysis
-            section.save()
+            step = form.save(commit=False)
+            step.analysis = analysis
+            step.save()
 
             return redirect('bc', slug = analysis.name) 
     else:
         form = NewStepForm()
     return render(
             request, 'step.html', 
-            {'analysis': analysis, 'mesh':analysis.mesh, 'materials':analysis.material.all(), 
-            'sections':analysis.section.all(), 'form': form}
+            {'analysis': analysis, 'mesh':analysis.mesh, 'resin':analysis.resin, 
+            'preforms':analysis.preform.all(), 'sections':analysis.section.all(), 'form': form}
         )
 
 def bc_page(request, slug):
-    return render(request, 'bc.html')
+    analysis = get_object_or_404(Analysis, name = slug)
+    if request.method == 'POST':
+        form = NewBCForm(request.POST)
+        if form.is_valid():
+            bc = form.save(commit=False)
+            bc.analysis = analysis
+            bc.save()
+
+            return redirect('submit', slug = analysis.name) 
+    else:
+        form = NewBCForm()
+    return render(
+            request, 'bc.html', 
+            {'analysis': analysis, 'mesh':analysis.mesh, 'resin':analysis.resin, 
+            'preforms':analysis.preform.all(), 'sections':analysis.section.all(), 
+            'step':analysis.step, 'form': form}
+        )
 
 def submit_page(request, slug):
-    return render(request, 'submit.html')
+    analysis = get_object_or_404(Analysis, name = slug)
+    if request.method == 'POST':
+        return redirect('result', slug = analysis.name) 
+    return render(
+            request, 'submit.html', 
+            {'analysis': analysis, 'mesh':analysis.mesh, 'resin':analysis.resin, 
+            'preforms':analysis.preform.all(), 'sections':analysis.section.all(), 
+            'step':analysis.step, 'bcs':analysis.bc.all()}
+        )
 
 def result_page(request, slug):
     return render(request, 'result.html')
