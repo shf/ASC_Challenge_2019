@@ -17,6 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.conf.urls.static import static
 from django.urls import path
+from django.views.generic.base import TemplateView
 from django.conf.urls import url
 from django.conf import settings
 
@@ -34,6 +35,7 @@ urlpatterns = [
     url(r'^(?P<slug>[-\w]+)/bc/$', views.bc_page, name='bc'),
     url(r'^(?P<slug>[-\w]+)/submit/$', views.submit_page, name='submit'),
     url(r'^(?P<slug>[-\w]+)/result/$', views.result_page, name='result'),
+    url(r'^meshdisplay/$', views.display_mesh, name='meshdisplay'),
 ]
 
 if settings.DEBUG:

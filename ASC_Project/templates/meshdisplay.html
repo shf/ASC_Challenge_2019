@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block title %}
+  {{ analysis.name }} - {{ block.super }}
+{% endblock %}
+
+{% block breadcrumb %}
+  <li class="breadcrumb-item"><a href="{% url 'home' %}">{{ analysis.name }}</a></li>
+  <li class="breadcrumb-item active">Display Mesh</li>
+{% endblock %}
+
+{% block content %}
+
+{% if graph %}
+<div style="width:600;height:500">
+{{ graph|safe }}
+</div>
+{% endif %}
+    
+{% endblock %}
