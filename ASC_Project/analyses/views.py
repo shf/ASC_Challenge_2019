@@ -2,7 +2,6 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.http import HttpResponse
 from django.conf import settings
 from django.core.files.storage import FileSystemStorage
-from django.views.generic.base import TemplateView
 
 from .models import Analysis
 from .models import Mesh
