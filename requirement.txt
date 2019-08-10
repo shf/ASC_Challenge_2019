@@ -1,5 +1,9 @@
 Django==2.2.4
 django-cleanup==4.0.0
 django-widget-tweaks==1.4.5
+pep8==1.7.1
+plotly==4.1.0
 pytz==2019.2
+retrying==1.3.3
+six==1.12.0
 sqlparse==0.3.0
