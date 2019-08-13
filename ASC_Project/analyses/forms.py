@@ -34,6 +34,7 @@ class NewResinForm(forms.ModelForm):
         fields = ['name', 'viscosity']
 
 class NewPreformForm(forms.ModelForm):
+    btn = forms.CharField(label='', widget=forms.HiddenInput())
     class Meta:
         model = Preform
         fields = ['name', 'thickness', 'K11', 'K12', 'K22']

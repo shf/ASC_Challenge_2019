@@ -185,17 +185,24 @@ def resin_page(request, slug):
 
 def preform_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
+    rows=[]
     if request.method == 'POST':
         form = NewPreformForm(request.POST)
         if form.is_valid():
             preform = form.save(commit=False)
             preform.analysis = analysis
             preform.save()
-
-            return redirect('section', slug=analysis.name)
+            preforms=Preform.objects.filter(analysis_id=analysis.id).values()
+            for item in preforms:
+                rows.append(item)
+            val = form.cleaned_data
+            if val['btn']=="add":
+                form = NewPreformForm(initial={'name':"Preform_{}".format(len(rows)+1)})
+            elif val['btn']=="proceed":
+                return redirect('section', slug=analysis.name)
     else:
-        form = NewPreformForm()
-    return render(request, 'preform.html', {'analysis': analysis, 'mesh': analysis.mesh, 'resin': analysis.resin, 'form': form})
+        form = NewPreformForm(initial={'name':"Preform_{}".format(len(rows)+1)})
+    return render(request, 'preform.html', {'analysis': analysis, 'mesh': analysis.mesh, 'resin': analysis.resin, 'rows':rows, 'form': form})
 
 
 def section_page(request, slug):
