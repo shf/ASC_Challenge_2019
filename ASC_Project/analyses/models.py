@@ -4,6 +4,10 @@ from django.contrib.auth.models import User
 from .choice import TYPE_OF_ANALYSIS
 from .choice import TYPE_OF_BC
 
+# this function defines a specific folder for the files required in analyses
+def analysis_directory_path(instance,filename):
+    # file will be uploaded to MEDIA_ROOT/user_<id>/<filename>
+    return '{}/{}'.format(instance.analysis.id,filename)
 
 class Analysis(models.Model):
     name = models.CharField(max_length=30, unique=True, help_text='Name of analysis')
@@ -13,12 +17,38 @@ class Analysis(models.Model):
         return self.name
 
 class Mesh(models.Model):
-    name = models.CharField(max_length=30, unique=True, help_text='Name of mesh')
+    name = models.CharField(max_length= 100, default="_None")
     analysis = models.OneToOneField(Analysis, related_name='mesh', on_delete=models.CASCADE)
-    address = models.FileField(upload_to='meshfiles/')
+    address = models.FileField(upload_to=analysis_directory_path)
+    NumFaces = models.IntegerField(default=1)
+    NumEdges = models.IntegerField(default=1)
 
     def __str__(self):
         return self.name
+
+class Nodes(models.Model):
+    NodeNum = models.IntegerField()
+    x = models.FloatField(null=True,max_length=6)
+    y = models.FloatField(null=True,max_length=6)
+    z = models.FloatField(null=True,max_length=6)
+    FaceGroup=models.CharField(max_length=50, default="_None")
+    EdgeGroup=models.CharField(max_length=50, default="_None")
+    mesh = models.ForeignKey(Mesh, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return "Nodes of {}".format(self.mesh)
+
+class Connectivity(models.Model):
+    ElmNum = models.IntegerField(null=True)
+    N1 = models.IntegerField(null=True)
+    N2 = models.IntegerField(null=True)
+    N3 = models.IntegerField(null=True)
+    mesh = models.ForeignKey(Mesh, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return "Connectivity table of {}".format(self.mesh)
+
+
 
 class Resin(models.Model):
     name = models.CharField(max_length=30, unique=True, help_text='Name of Resin')

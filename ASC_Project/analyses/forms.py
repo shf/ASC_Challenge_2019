@@ -19,7 +19,14 @@ class NewAnalysisForm(forms.ModelForm):
 class NewMeshForm(forms.ModelForm):
     class Meta:
         model = Mesh
-        fields = ['name', 'address']
+        fields = ['address']
+
+class MeshConfirmationForm(forms.Form):
+    CHOICES=[('yes','Yes'),
+         ('no','No')]
+    like = forms.CharField(label= 'Do you confirm the mesh?', 
+        widget=forms.RadioSelect(choices=CHOICES))
+
 
 class NewResinForm(forms.ModelForm):
     class Meta:

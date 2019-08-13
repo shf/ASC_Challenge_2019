@@ -11,34 +11,35 @@ class MeshImport():
 
     def UNVtoXMLConverter(self):
         UNVFile = open(self._FileAddress, "r").readlines()
-        flag = None
-        nodes = {}
-        connectivity = {}
+        _flag = None
+        _nodes = {}
+        _connectivity = {}
         TriangleElement = False
         for line in UNVFile:
             temp = line.split()
             if "-1" in temp:
-                flag = None
-            if flag == "Nodes":
+                _flag = None
+            if _flag == "Nodes":
                 if len(temp) == 4:
                     NodeID = temp[0]
                 if len(temp) == 3:
-                    nodes[NodeID] = temp
-            if flag == "Elements":
+                    _nodes[NodeID] = temp
+            if _flag == "Elements":
                 if len(temp) == 6:
                     if temp[5] == "3":
                         TriangleElement = True
                         CellID = temp[0]
                 if len(temp) == 3 and TriangleElement:
-                    connectivity[CellID] = temp
+                    _connectivity[CellID] = temp
                     TriangleElement = False
             if "2411" in line and len(temp) == 1:
-                flag = "Nodes"
+                _flag = "Nodes"
             if "2412" in line and len(temp) == 1:
-                flag = "Elements"
-        SortedConnectivity = collections.OrderedDict(
-            sorted(connectivity.items()))
-        self._connectivity = SortedConnectivity
+                _flag = "Elements"
+        _SortedConnectivity = collections.OrderedDict(
+            sorted(_connectivity.items()))
+        self._connectivity = _SortedConnectivity
+        self._Nodes=_nodes
         # writing xml file
         directory = self._FileAddress.split("/")
         directory.pop()
@@ -46,20 +47,24 @@ class MeshImport():
         XMLFile = open("/".join(directory), "w")
         XMLFile.write("<dolfin xmlns:dolfin=\"https://fenicsproject.org/\">\n")
         XMLFile.write("  <mesh celltype=\"triangle\" dim=\"3\">\n")
-        XMLFile.write("    <vertices size=\"{}\">\n".format(len(nodes)+1))
-        for key, value in nodes.items():
+        XMLFile.write("    <vertices size=\"{}\">\n".format(len(_nodes)+1))
+        for key, value in _nodes.items():
             XMLFile.write("      <vertex index=\"{}\" x=\"{}\" y=\"{}\" z=\"{}\"/>\n".format(
                 key, value[0], value[1], value[2]))
         XMLFile.write("    </vertices>\n")
         XMLFile.write("    <cells size=\"{}\">\n".format(
-            int(min(SortedConnectivity.keys()))+len(SortedConnectivity)))
-        for key, value in SortedConnectivity.items():
+            int(min(_SortedConnectivity.keys()))+len(_SortedConnectivity)))
+        for key, value in _SortedConnectivity.items():
             XMLFile.write("      <triangle index=\"{}\" v0=\"{}\" v1=\"{}\" v2=\"{}\"/>\n".format(
                 key, value[0], value[1], value[2]))
         XMLFile.write("    </cells>\n")
         XMLFile.write("  </mesh>\n")
         XMLFile.write("</dolfin>\n")
         XMLFile.close()
+    
+    def MeshData(self):
+        return self._Nodes, self._connectivity
+
 
     def MeshGroups(self):
         UNVFile = open(self._FileAddress, "r").readlines()
