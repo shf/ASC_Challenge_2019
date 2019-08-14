@@ -1,36 +1,15 @@
-{% extends 'base.html' %}
+{% extends 'BaseSidebar.html' %}
 
 
 {% block title %}
   {{ analysis.name }} - {{ block.super }}
 {% endblock %}
 
-{% block breadcrumb %}
-  <li class="breadcrumb-item"><a href="{% url 'home' %}">{{ analysis.name }}</a></li>
-  <li class="breadcrumb-item active">Resin Material Properties</li>
+
+{% block PageName %}
+  Resin Material Property
 {% endblock %}
-
 {% block content %}
-
-<table class="table">
-    <thead class="thead-inverse">
-      <tr>
-        <th>Parameter</th>
-        <th>Variables</th>
-      </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td class="align-middle">Analysis</td>
-            <td class="align-middle">{{ analysis.name }}</td>
-        </tr>
-        <tr>
-            <td class="align-middle">Mesh</td>
-            <td class="align-middle">{{ mesh.name }}</td>
-        </tr>
-    </tbody>
-</table>
-
 <form method="post" validate>
     {% csrf_token %}  
     {% include 'includes/form.html' %}

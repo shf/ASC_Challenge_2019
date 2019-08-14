@@ -24,17 +24,17 @@ from analyses import views
 
 
 urlpatterns = [
-    url(r'^admin/', admin.site.urls),
-    url(r'^$', views.home, name='home'),
-    url(r'^(?P<slug>[-\w]+)/mesh/$', views.mesh_page, name='mesh'),
-    url(r'^(?P<slug>[-\w]+)/resin/$', views.resin_page, name='resin'),
-    url(r'^(?P<slug>[-\w]+)/preform/$', views.preform_page, name='preform'),
-    url(r'^(?P<slug>[-\w]+)/section/$', views.section_page, name='section'),
-    url(r'^(?P<slug>[-\w]+)/step/$', views.step_page, name='step'),
-    url(r'^(?P<slug>[-\w]+)/bc/$', views.bc_page, name='bc'),
-    url(r'^(?P<slug>[-\w]+)/submit/$', views.submit_page, name='submit'),
-    url(r'^(?P<slug>[-\w]+)/result/$', views.result_page, name='result'),
-    url(r'^meshdisplay/$', views.display_mesh, name='meshdisplay'),
+    path('', views.home, name='home'),
+    path('admin/', admin.site.urls),
+    path('<slug:slug>/mesh/', views.mesh_page, name='mesh'),
+    path('<slug:slug>/mesh/<int:pk>', views.display_mesh, name='meshdisplay'),
+    path('<slug:slug>/resin/', views.resin_page, name='resin'),
+    path('<slug:slug>/preform/', views.preform_page, name='preform'),
+    path('<slug:slug>/section/', views.section_page, name='section'),
+    path('<slug:slug>/step/', views.step_page, name='step'),
+    path('<slug:slug>/bc/', views.bc_page, name='bc'),
+    path('<slug:slug>/submit/', views.submit_page, name='submit'),
+    path('<slug:slug>/result/', views.result_page, name='result'),
 ]
 
 if settings.DEBUG:

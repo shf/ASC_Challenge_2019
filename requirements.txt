@@ -1,0 +1,4 @@
+fenics_dolfin==2019.1.0
+Django==2.2.4
+plotly==4.1.0
+fenics==2019.1.0
