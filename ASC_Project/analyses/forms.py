@@ -65,5 +65,6 @@ class NewBCForm(forms.ModelForm):
     
     typ = forms.ChoiceField(choices = TYPE_OF_BC)
 
-
+class JobSubmitForm(forms.Form):
+    btn = forms.CharField(label='')
 

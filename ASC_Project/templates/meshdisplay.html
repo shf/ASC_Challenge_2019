@@ -1,12 +1,16 @@
-{% extends 'base.html' %}
+{% extends 'BaseSidebar.html' %}
 
 {% block title %}
   {{ analysis.name }} - {{ block.super }}
 {% endblock %}
 
-{% block breadcrumb %}
-  <li class="breadcrumb-item"><a href="{% url 'home' %}">{{ analysis.name }}</a></li>
-  <li class="breadcrumb-item active">Display Mesh</li>
+{% block Analysis %}
+  {{ analysis.name }}
+{% endblock %}
+
+
+{% block PageName %}
+  Mesh
 {% endblock %}
 
 {% block content %}

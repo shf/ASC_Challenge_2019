@@ -1,39 +1,22 @@
-{% extends 'base.html' %}
+{% extends 'BaseSidebar.html' %}
 
 
 {% block title %}
   {{ analysis.name }} - {{ block.super }}
 {% endblock %}
 
-{% block breadcrumb %}
-  <li class="breadcrumb-item"><a href="{% url 'home' %}">{{ analysis.name }}</a></li>
-  <li class="breadcrumb-item active">Creating Preform</li>
+{% block Analysis %}
+  {{ analysis.name }}
 {% endblock %}
+
+
+{% block PageName %}
+  Preform
+{% endblock %}
+
 
 {% block content %}
 
-<table class="table">
-    <thead class="thead-inverse">
-      <tr>
-        <th>Parameter</th>
-        <th>Variables</th>
-      </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td class="align-middle">Analysis</td>
-            <td class="align-middle">{{ analysis.name }}</td>
-        </tr>
-        <tr>
-            <td class="align-middle">Mesh</td>
-            <td class="align-middle">{{ mesh.name }}</td>
-        </tr>
-        <tr>
-          <td class="align-middle">Resin</td>
-          <td class="align-middle">{{ resin.name }}</td>
-      </tr>
-    </tbody>
-</table>
 <div class="container">
     <div class="row">
       <div class="col-sm-4">
@@ -62,7 +45,7 @@
               </tr>
             </thead>
             <tbody>
-              {% for r in rows %}
+              {% for r in preforms %}
                 <tr>
                   <td>{{r.name}}</td>
                   <td>{{r.thickness}}</td>

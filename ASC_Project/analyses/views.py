@@ -1,3 +1,6 @@
+# to convert string to dict
+import ast
+
 import colorlover as cl
 import plotly.graph_objs as go
 import plotly.offline as opy
@@ -5,12 +8,15 @@ from django.conf import settings
 from django.core.files.storage import FileSystemStorage
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.template.defaulttags import register
 
-from .forms import (NewAnalysisForm, NewBCForm, NewMeshForm, MeshConfirmationForm, NewPreformForm,
-                    NewResinForm, NewSectionForm, NewStepForm)
+from .forms import (MeshConfirmationForm, NewAnalysisForm, NewBCForm,
+                    NewMeshForm, NewPreformForm, NewResinForm, NewSectionForm,
+                    NewStepForm, JobSubmitForm)
 from .models import (BC, Analysis, Connectivity, Mesh, Nodes, Preform, Resin,
                      Section, Step)
 from .solver.Importers import MeshImport
+
 
 def PlotlyPlot (nodes, table):
     xn = []
@@ -85,9 +91,61 @@ def PlotlyPlot (nodes, table):
 
     return opy.plot(figure, auto_open=False, output_type='div')
 
+# dictionary for sidebar switching
+@register.filter
+def get_active(dictionary, key):
+    return dictionary.get(key)[0]
+@register.filter
+def get_show(dictionary, key):
+    return dictionary.get(key)[1]
 
+class SideBarPage():
+    def __init__(self):
+        self._page ={
+            'mesh':["<li class=\"nav-item\">","<div id=\"collapse_mesh\" class=\"collapse\" aria-labelledby=\"headingUtilities\"data-parent=\"#accordionSidebar\">"],
+            'resin':["<li class=\"nav-item\">","<div id=\"collapse_resin\" class=\"collapse\" aria-labelledby=\"headingUtilities\"data-parent=\"#accordionSidebar\">"],
+            'preform':["<li class=\"nav-item\">","<div id=\"collapse_preform\" class=\"collapse\" aria-labelledby=\"headingUtilities\"data-parent=\"#accordionSidebar\">"],
+            'section':["<li class=\"nav-item\">","<div id=\"collapse_section\" class=\"collapse\" aria-labelledby=\"headingUtilities\"data-parent=\"#accordionSidebar\">"],
+            'step':["<li class=\"nav-item\">","<div id=\"collapse_step\" class=\"collapse\" aria-labelledby=\"headingUtilities\"data-parent=\"#accordionSidebar\">"],
+            'bc':["<li class=\"nav-item\">","<div id=\"collapse_bc\" class=\"collapse\" aria-labelledby=\"headingUtilities\"data-parent=\"#accordionSidebar\">"],
+            'submit':["<li class=\"nav-item\">","<div id=\"collapse_submit\" class=\"collapse\" aria-labelledby=\"headingUtilities\"data-parent=\"#accordionSidebar\">"]
+            }
+    def DicUpdate(self,page):
+        self._page[page]=['<li class=\"nav-item active\">',"<div id=\"collapse_{}\" class=\"collapse show\" aria-labelledby=\"headingUtilities\"data-parent=\"#accordionSidebar\">".format(page)]
+        return self._page
+
+# variables to pass in all views
+class NoObject():
+    def __init__(self,_name):
+        self._name=_name
+    @property
+    def name(self):
+        return self._name
+
+def PageVariables(Page,form,analysis):
+    ViewsVars={'page': Page,
+        'form': form,
+        'analysis': analysis,
+        'preforms': analysis.preform.all(),
+        'sections': analysis.section.all(),
+        'bc': analysis.bc.all()}
+    try:
+        ViewsVars['mesh']=analysis.mesh
+    except:
+        ViewsVars['mesh']=NoObject("Empty")
+    try:
+        ViewsVars['resin']=analysis.resin
+    except:
+        ViewsVars['resin']=NoObject("Empty")   
+    try:
+        ViewsVars['step']=analysis.step
+    except:
+        ViewsVars['step']=NoObject("Empty")    
+    return ViewsVars
+
+# views:
 def home(request):
-    analyses = Analysis.objects.all()
+    analysis = Analysis.objects.all()
     if request.method == 'POST':
         form = NewAnalysisForm(request.POST)
         if form.is_valid():
@@ -97,7 +155,8 @@ def home(request):
             return redirect('mesh', slug=analysis.name)
     else:
         form = NewAnalysisForm()
-    return render(request, 'home.html', {'form': form})
+    Page = SideBarPage().DicUpdate("")
+    return render(request, 'home.html', {'page':Page, 'form': form})
 
 
 def mesh_page(request, slug):
@@ -143,7 +202,8 @@ def mesh_page(request, slug):
             return redirect('meshdisplay', slug=analysis.name, pk=mesh.id)
     else:
         form = NewMeshForm()
-    return render(request, 'mesh.html', {'analysis': analysis, 'form': form})
+    Page = SideBarPage().DicUpdate("")
+    return render(request, 'mesh.html', PageVariables(Page,form,analysis))
 
 def display_mesh(request, slug, pk):
 
@@ -163,14 +223,15 @@ def display_mesh(request, slug, pk):
                 return redirect('mesh', slug=analysis.name)
     else:
         form = MeshConfirmationForm()
-
-    return render(request, 'meshdisplay.html', {'analysis': analysis, 'graph': div, 'form': form})
+    Page = SideBarPage().DicUpdate("mesh")
+    dic=PageVariables(Page,form,analysis)
+    dic['graph']=div
+    return render(request, 'meshdisplay.html', dic)
 
 
 
 def resin_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
-    mesh = get_object_or_404(Mesh, analysis_id=analysis.id)
     if request.method == 'POST':
         form = NewResinForm(request.POST)
         if form.is_valid():
@@ -180,29 +241,27 @@ def resin_page(request, slug):
             return redirect('preform', slug=analysis.name)
     else:
         form = NewResinForm()
-    return render(request, 'resin.html', {'analysis': analysis, 'mesh': mesh, 'form': form})
- 
+    Page = SideBarPage().DicUpdate("resin")
+    return render(request, 'resin.html', PageVariables(Page,form,analysis))
+
 
 def preform_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
-    rows=[]
     if request.method == 'POST':
         form = NewPreformForm(request.POST)
         if form.is_valid():
             preform = form.save(commit=False)
             preform.analysis = analysis
-            preform.save()
-            preforms=Preform.objects.filter(analysis_id=analysis.id).values()
-            for item in preforms:
-                rows.append(item)
             val = form.cleaned_data
             if val['btn']=="add":
-                form = NewPreformForm(initial={'name':"Preform_{}".format(len(rows)+1)})
+                preform.save()
+                form = NewPreformForm(initial={'name':"Preform_{}".format(len(analysis.preform.all())+1)})
             elif val['btn']=="proceed":
                 return redirect('section', slug=analysis.name)
     else:
-        form = NewPreformForm(initial={'name':"Preform_{}".format(len(rows)+1)})
-    return render(request, 'preform.html', {'analysis': analysis, 'mesh': analysis.mesh, 'resin': analysis.resin, 'rows':rows, 'form': form})
+        form = NewPreformForm(initial={'name':"Preform_{}".format(len(analysis.preform.all())+1)})
+    Page = SideBarPage().DicUpdate("preform")
+    return render(request, 'preform.html', PageVariables(Page,form,analysis))
 
 
 def section_page(request, slug):
@@ -213,14 +272,11 @@ def section_page(request, slug):
             section = form.save(commit=False)
             section.analysis = analysis
             section.save()
-
             return redirect('step', slug=analysis.name)
     else:
         form = NewSectionForm(analysis=analysis)
-    return render(request, 'section.html',
-                  {'analysis': analysis, 'mesh': analysis.mesh, 'resin': analysis.resin,
-                      'preforms': analysis.preform.all(), 'form': form}
-                  )
+    Page = SideBarPage().DicUpdate("section")
+    return render(request, 'section.html', PageVariables(Page,form,analysis))
 
 
 def step_page(request, slug):
@@ -235,11 +291,8 @@ def step_page(request, slug):
             return redirect('bc', slug=analysis.name)
     else:
         form = NewStepForm()
-    return render(
-        request, 'step.html',
-        {'analysis': analysis, 'mesh': analysis.mesh, 'resin': analysis.resin,
-         'preforms': analysis.preform.all(), 'sections': analysis.section.all(), 'form': form}
-    )
+    Page = SideBarPage().DicUpdate("step")
+    return render(request,'step.html', PageVariables(Page,form,analysis))
 
 
 def bc_page(request, slug):
@@ -254,27 +307,20 @@ def bc_page(request, slug):
             return redirect('submit', slug=analysis.name)
     else:
         form = NewBCForm()
-    return render(
-        request, 'bc.html',
-        {'analysis': analysis, 'mesh': analysis.mesh, 'resin': analysis.resin,
-         'preforms': analysis.preform.all(), 'sections': analysis.section.all(),
-         'step': analysis.step, 'form': form}
-    )
+    Page = SideBarPage().DicUpdate("bc")
+    return render(request, 'bc.html', PageVariables(Page,form,analysis))
 
 
 def submit_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     if request.method == 'POST':
+        form = JobSubmitForm(request.POST)
         return redirect('result', slug=analysis.name)
-    return render(
-        request, 'submit.html',
-        {'analysis': analysis, 'mesh': analysis.mesh, 'resin': analysis.resin,
-         'preforms': analysis.preform.all(), 'sections': analysis.section.all(),
-         'step': analysis.step, 'bcs': analysis.bc.all()}
-    )
+    else:
+        form = JobSubmitForm()
+    Page = SideBarPage().DicUpdate("submit")
+    return render(request, 'submit.html', PageVariables(Page,form,analysis))
 
 
 def result_page(request, slug):
     return render(request, 'result.html')
-
-
