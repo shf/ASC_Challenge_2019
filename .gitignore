@@ -3,10 +3,10 @@ __pycache__/
 .env
 venv/
 *.pyc
-/media/
+media/
 UserFiles/
 .vscode/
-
+migrations/
 
 # SQLite database files
 

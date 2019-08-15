@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% block SideBar%}
+<!-- Mesh item -->
+{{ page|get_active:'mesh'|safe }}
+<a class="nav-link" href="#" data-toggle="collapse" data-target="#collapse_mesh" aria-expanded="true"
+    aria-controls="collapse_mesh">
+    Mesh
+</a>
+{{ page|get_show:'mesh'|safe }}
+<div class="bg-white py-2 collapse-inner rounded">
+    {% if mesh.name|length > 0 %}
+        <h5 class="text-center">{{mesh.name}}</h5>
+    {% else %}
+        <h5 class="text-center">Empty</h5>
+    {% endif %}
+</div>
+</div>
+</li>
+<!-- End of mesh item -->
+
+<!-- Resin item -->
+{{ page|get_active:'resin'|safe }}
+<a class="nav-link" href="#" data-toggle="collapse" data-target="#collapse_resin" aria-expanded="true"
+    aria-controls="collapse_resin">
+    Resin
+</a>
+{{ page|get_show:'resin'|safe }}
+<div class="bg-white py-2 collapse-inner rounded">
+    {% if resin.name|length > 0 %}
+        <h5 class="text-center">{{resin.name}}</h5>
+    {% else %}
+        <h5 class="text-center">Empty</h5>
+    {% endif %}
+</div>
+</div>
+</li>
+<!-- End of Resin item -->
+
+<!-- Preform item -->
+{{ page|get_active:'preform'|safe }}
+<a class="nav-link" href="#" data-toggle="collapse" data-target="#collapse_preform" aria-expanded="true"
+    aria-controls="collapse_preform">
+    Preform
+</a>
+{{ page|get_show:'preform'|safe }}
+<div class="bg-white py-2 collapse-inner rounded">
+    {% if preforms|length > 0 %}
+        <table class="table table-borderless">
+            <tbody>
+                {% for r in preforms %}
+                <tr>
+                    <td>{{r.name}}</td>
+                    <td>{{r.thickness}}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <h5 class="text-center">Empty</h5>
+    {% endif %}
+</div>
+</div>
+</li>
+<!-- End of Preform item -->
+
+<!-- Section item -->
+{{ page|get_active:'section'|safe }}
+<a class="nav-link" href="#" data-toggle="collapse" data-target="#collapse_section" aria-expanded="true"
+    aria-controls="collapse_section">
+    Section
+</a>
+{{ page|get_show:'section'|safe }}
+<div class="bg-white py-2 collapse-inner rounded">
+    {% if sections|length > 0 %}
+        <table class="table table-borderless">
+            <tbody>
+                {% for r in sections %}
+                <tr>
+                    <td>{{r.name}}</td>
+                    <td>{{r.preform.name}}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <h5 class="text-center">Empty</h5>
+    {% endif %}
+</div>
+</div>
+</li>
+<!-- End of Section item -->
+
+<!-- Step item -->
+{{ page|get_active:'step'|safe }}
+<a class="nav-link" href="#" data-toggle="collapse" data-target="#collapse_step" aria-expanded="true"
+    aria-controls="collapse_step">
+    Step
+</a>
+{{ page|get_show:'step'|safe }}
+<div class="bg-white py-2 collapse-inner rounded">
+    {% if step.name|length > 0 %}
+        <h5 class="text-center">{{step.name}}</h5>
+    {% else %}
+        <h5 class="text-center">Empty</h5>
+    {% endif %}
+</div>
+</div>
+</li>
+<!-- End of Step item -->
+
+<!-- Bc item -->
+{{ page|get_active:'bc'|safe }}
+<a class="nav-link" href="#" data-toggle="collapse" data-target="#collapse_bc" aria-expanded="true"
+    aria-controls="collapse_bc">
+    Boundary Condition
+</a>
+{{ page|get_show:'bc'|safe }}
+<div class="bg-white py-2 collapse-inner rounded">
+    {% if bc|length > 0 %}
+        <table class="table table-borderless">
+            <tbody>
+                {% for r in bc %}
+                <tr>
+                    <td>{{r.name}}</td>
+                    <td>{{r.typ}}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <h5 class="text-center">Empty</h5>
+    {% endif %}
+</div>
+</div>
+</li>
+<!-- End of Bc item -->
+
+<!-- Submit Job item -->
+{{ page|get_active:'submit'|safe }}
+<a class="nav-link" href="#">
+    Submit Job
+</a>
+<!-- End of Submit Job  item -->
+
+{% endblock %}

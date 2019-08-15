@@ -1,27 +1,106 @@
-{% load static %}<!DOCTYPE html>
+{% load static %}
+<!DOCTYPE html>
+
 <html>
-  <head>
-    <meta charset="utf-8">
-    <title>{% block title %} ASC Challenge Software {% endblock %}</title>
-    <link href="https://fonts.googleapis.com/css?family=Peralta" rel="stylesheet">
-    <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
-    <link rel="stylesheet" href="{% static 'css/app.css' %}">
-  </head>
-  <body>
 
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-      <div class="container">
-        <a class="navbar-brand" href="{% url 'home' %}">ASC Software Challenge</a>
-      </div>
-    </nav>
+<head>
 
-    <div class="container">
-      <ol class="breadcrumb my-4">
-        {% block breadcrumb %}
-        {% endblock %}
-      </ol>
-      {% block content %}
-      {% endblock %}
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>{% block title %} ASC Challenge Software {% endblock %}</title>
+  <link href="https://fonts.googleapis.com/css?family=Peralta" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+  <link rel="stylesheet" href="{% static 'css/sb-admin-2.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/bootstrap.css' %}" type="text/css">
+  <script src="{% static 'js/jquery.min.js' %}"></script>
+  <script src="{% static 'js/bootstrap.min.js' %}"></script>
+</head>
+
+<body id="page-top">
+  <!-- page upper navbar -->
+  <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+    <div class="mx-auto order-0">
+      <a class="navbar-brand" href="{% url 'home' %}">ASC Software Challenge</a>
     </div>
-  </body>
+  </nav>
+
+  <!-- page Wrapper -->
+  <div id="wrapper">
+
+    <!-- sidebar -->
+    <ul class="navbar-nav bg-dark  sidebar sidebar-dark accordion" id="accordionSidebar">
+
+      <!-- Sidebar - analysis name -->
+      <a class="sidebar-brand d-flex align-items-center justify-content-center" href="index.html">
+        <div class="sidebar-brand-text mx-3">{% block Analysis %}{% endblock %}<br>
+        </div>
+      </a>
+
+      <!-- Nav Items -->
+      <div class="container">
+        <div class="row">
+          <div class="col">
+            {% block SideBar%}
+            {% endblock SideBar%}
+          </div>
+        </div>
+      </div>
+      <!-- End of Nav Items -->
+
+    </ul>
+    <!-- End of Sidebar -->
+
+    <!-- Content Wrapper -->
+    <div id="content-wrapper" class="d-flex flex-column">
+
+      <!-- Main Content -->
+      <div id="content">
+
+        <!-- Begin page Content -->
+        <div class="container-fluid">
+
+          <!-- Content Row -->
+          <div class="row">
+
+            <!-- Form Contents -->
+            <div class="col-xl-12 col-lg-12">
+              <br>
+              <div class="card shadow mb-4">
+                <!-- Card Header - Dropdown -->
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                  <h6 class="m-0 font-weight-bold text-primary">{% block PageName %}{% endblock %}</h6>
+                </div>
+                <!-- Card Body -->
+                <div class="card-body">
+                  {% block content %}
+                  {% endblock %}
+                </div>
+
+              </div>
+            </div>
+            <!-- End of form content -->
+          </div>
+          <!-- End of row -->
+        </div>
+
+        <!-- End of container fluid -->
+      </div>
+      <!-- End of Main Content -->
+
+      <!-- Footer -->
+      <footer class="sticky-footer bg-white">
+        <div class="container my-auto">
+          <div class="copyright text-center my-auto">Nasser Arbabi, Shayan Fahimi<br>
+          </div>
+        </div>
+      </footer>
+      <!-- End of Footer -->
+
+    </div>
+    <!-- End of Content Wrapper -->
+  </div>
+
+</body>
+
 </html>

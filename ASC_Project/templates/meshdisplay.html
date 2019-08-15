@@ -1,20 +1,39 @@
-{% extends 'base.html' %}
+{% extends 'BaseSidebar.html' %}
 
 {% block title %}
   {{ analysis.name }} - {{ block.super }}
 {% endblock %}
 
-{% block breadcrumb %}
-  <li class="breadcrumb-item"><a href="{% url 'home' %}">{{ analysis.name }}</a></li>
-  <li class="breadcrumb-item active">Display Mesh</li>
+{% block Analysis %}
+  {{ analysis.name }}
+{% endblock %}
+
+
+{% block PageName %}
+  Mesh
 {% endblock %}
 
 {% block content %}
 
 {% if graph %}
-<div style="width:600;height:500">
+<div >
 {{ graph|safe }}
 </div>
 {% endif %}
-    
+
+<div>
+  <form method="post" enctype="multipart/form-data">
+  
+    {% csrf_token %}  
+    {{ form.as_p }}
+    <!-- {% include 'includes/form.html' %} -->
+  
+    <button type="submit" class="btn btn-success">Submit</button>
+  </form>
+  <br>
+  <br>
+
+</div>
+
+
 {% endblock %}
