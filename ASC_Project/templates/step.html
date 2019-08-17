@@ -1,52 +1,18 @@
-{% extends 'base.html' %}
+{% extends 'BaseSidebar.html' %}
 
+{% block title %}
+  {{ analysis.name }} - {{ block.super }}
+{% endblock %}
 
-{% block breadcrumb %}
-  <li class="breadcrumb-item active">Creating Step</li>
+{% block Analysis %}
+  {{ analysis.name }}
+{% endblock %}
+
+{% block PageName %}
+  Step
 {% endblock %}
 
 {% block content %}
-
-<table class="table">
-  <thead class="thead-inverse">
-    <tr>
-      <th>Parameter</th>
-      <th>Variables</th>
-    </tr>
-  </thead>
-  <tbody>
-      <tr>
-          <td class="align-middle">Analysis</td>
-          <td class="align-middle">{{ analysis.name }}</td>
-      </tr>
-      <tr>
-          <td class="align-middle">Mesh</td>
-          <td class="align-middle">{{ mesh.name }}</td>
-      </tr>
-      <tr>
-        <td class="align-middle">Resin</td>
-        <td class="align-middle">{{ resin.name }}</td>
-      </tr>
-      <tr>
-          <td class="align-middle">Preforms</td>
-          
-          <td class="align-middle">
-            {% for preform in preforms %}
-              {{ preform.name }} <br>
-            {% endfor %}
-          </td>
-      </tr>
-      <tr>
-        <td class="align-middle">Sections</td>
-        
-        <td class="align-middle">
-          {% for section in sections %}
-            {{ section.name }} <br>
-          {% endfor %}
-        </td>
-      </tr>
-  </tbody>
-</table>
 
 <form method="post" validate>
   {% csrf_token %}  

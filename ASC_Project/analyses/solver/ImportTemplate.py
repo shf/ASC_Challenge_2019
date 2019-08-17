@@ -37,5 +37,5 @@ for num, (key, value) in enumerate(Faces.items(),1):
             if all(item in value for item in entity):
                 sections[cell.index()]=num
 
-fn.File("./UserFiles/boundaries.pvd") << boundaries
-fn.File("./UserFiles/sections.pvd") << sections
+# fn.File("./UserFiles/boundaries.pvd") << boundaries
+# fn.File("./UserFiles/sections.pvd") << sections

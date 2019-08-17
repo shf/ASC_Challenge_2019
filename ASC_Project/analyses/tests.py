@@ -18,6 +18,8 @@ from .views import result_page
 
 from .models import Analysis
 from .models import Mesh
+from .models import Nodes
+from .models import Connectivity
 from .models import Resin
 from .models import Preform
 from .models import Section
@@ -95,14 +97,10 @@ class MeshTests(TestCase):
 
     def test_mesh_valid_mesh_data(self):
         url = reverse('mesh', kwargs={'slug': 'test'})
-        mesh = SimpleUploadedFile("mesh.xml", b"file_content", content_type="mesh/xml")
+        
+        with open("analyses/TestData/TestMesh.unv") as fp:
+            self.client.post(url, {'analysis_id': Analysis.id, 'address':fp})
 
-        data = {
-            'name': 'test_mesh',
-            'address': mesh
-        }
-
-        response = self.client.post(url, data)
         self.assertTrue(Mesh.objects.exists())
 
         mesh = Mesh.objects.get(name="test_mesh")
@@ -137,6 +135,9 @@ class MeshTests(TestCase):
 
         mesh = Mesh.objects.get(name="test_mesh")
         os.remove(mesh.address.path)
+
+class MeshDisplayTests(TestCase):
+    pass
 
 class ResinTest(TestCase):
     def setUp(self):

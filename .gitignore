@@ -3,12 +3,13 @@ __pycache__/
 .env
 venv/
 *.pyc
-/media/
+media/
 UserFiles/
 Darcy
 pybind11-2.2.3/
 .vscode/
 mshr/
+migrations/
 
 # SQLite database files
 
