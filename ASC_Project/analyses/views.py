@@ -1,5 +1,3 @@
-# to convert string to dict
-import ast
 import plotly.graph_objs as go
 import plotly.offline as opy
 from django.conf import settings
@@ -7,16 +5,17 @@ from django.core.files.storage import FileSystemStorage
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaulttags import register
+from django.contrib import messages
 
 from .forms import (MeshConfirmationForm, NewAnalysisForm, NewBCForm,
                     NewMeshForm, NewPreformForm, NewResinForm, NewSectionForm,
-                    NewStepForm, JobSubmitForm)
+                    NewStepForm, JobSubmitForm, ResultsForm)
 from .models import (BC, Analysis, Connectivity, Mesh, Nodes, Preform, Resin,
-                     Section, Step)
-from .solver.Importers import MeshImport
+                     Section, Step, Results)
+from .solver.Importers import MeshImport, Contour
 
 
-def PlotlyPlot (nodes, table):
+def PlotlyPlot (nodes, table, intensity):
     xn = []
     yn = []
     zn = []
@@ -31,9 +30,9 @@ def PlotlyPlot (nodes, table):
     kk = []
 
     for line in table.values():
-        ii.append(line["N1"]-1)
-        jj.append(line["N2"]-1)
-        kk.append(line["N3"]-1)
+        ii.append(line["N1"])
+        jj.append(line["N2"])
+        kk.append(line["N3"])
 
     # define lines of each element
     x_line = []
@@ -44,15 +43,24 @@ def PlotlyPlot (nodes, table):
         x_line.extend([xn[v] for v in elem]+[None])
         y_line.extend([yn[v] for v in elem]+[None])
         z_line.extend([zn[v] for v in elem]+[None])
+    colorbar_title="Field"
+    if intensity:
+        
+        showscale=True
+    else:
+        showscale=False
 
     figure = go.Figure(data=[
         go.Mesh3d(
             x=xn,
             y=yn,
             z=zn,
-            showscale=False,
+            showscale=showscale,
+            
             color='darkturquoise',
-
+            colorscale='RdBu',
+            colorbar_title=colorbar_title,
+            intensity=intensity,
             i=ii,
             j=jj,
             k=kk,
@@ -106,7 +114,8 @@ class SideBarPage():
             'section':["<li class=\"nav-item\">","<div id=\"collapse_section\" class=\"collapse\" aria-labelledby=\"headingUtilities\"data-parent=\"#accordionSidebar\">"],
             'step':["<li class=\"nav-item\">","<div id=\"collapse_step\" class=\"collapse\" aria-labelledby=\"headingUtilities\"data-parent=\"#accordionSidebar\">"],
             'bc':["<li class=\"nav-item\">","<div id=\"collapse_bc\" class=\"collapse\" aria-labelledby=\"headingUtilities\"data-parent=\"#accordionSidebar\">"],
-            'submit':["<li class=\"nav-item\">","<div id=\"collapse_submit\" class=\"collapse\" aria-labelledby=\"headingUtilities\"data-parent=\"#accordionSidebar\">"]
+            'submit':["<li class=\"nav-item\">","<div id=\"collapse_submit\" class=\"collapse\" aria-labelledby=\"headingUtilities\"data-parent=\"#accordionSidebar\">"],
+            'results':["<li class=\"nav-item\">","<div id=\"collapse_submit\" class=\"collapse\" aria-labelledby=\"headingUtilities\"data-parent=\"#accordionSidebar\">"]
             }
     def DicUpdate(self,page):
         self._page[page]=['<li class=\"nav-item active\">',"<div id=\"collapse_{}\" class=\"collapse show\" aria-labelledby=\"headingUtilities\"data-parent=\"#accordionSidebar\">".format(page)]
@@ -208,7 +217,7 @@ def display_mesh(request, slug, pk):
     analysis = get_object_or_404(Analysis, name=slug)   
     nodes = Nodes.objects.filter(mesh_id=pk)
     table = Connectivity.objects.filter(mesh_id=pk)
-    div = PlotlyPlot(nodes, table)
+    div = PlotlyPlot(nodes, table, None)
     
     if request.method == 'POST':
         form = MeshConfirmationForm(request.POST)
@@ -296,15 +305,37 @@ def step_page(request, slug):
 def bc_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     if request.method == 'POST':
-        form = NewBCForm(request.POST)
+        form = NewBCForm(request.POST, mesh=analysis.mesh)
         if form.is_valid():
             bc = form.save(commit=False)
             bc.analysis = analysis
-            bc.save()
+            val = form.cleaned_data
+            exist=False
+            if val['btn']=="add":
+                # check if the value exist and update it
+                for bc_data in analysis.bc.values():
+                    if bc.name in bc_data['name']:
+                        exist=True
+                        Update_key=bc_data['id']
+                        Update_name=bc.name
+                if exist:
+                    messages.warning(request, 'Boundary condition updated!'.format(Update_name))
+                    UpdateBC=BC.objects.get(id=Update_key)
+                    UpdateBC.value = bc.value
+                    UpdateBC.typ = bc.typ
+                    UpdateBC.save()
+                else:
+                    bc.save( )
+                form = NewBCForm(request.POST, mesh=analysis.mesh)
+            elif val['btn']=="proceed":
+                if len(analysis.bc.values())==analysis.mesh.NumEdges:
+                    return redirect('submit', slug=analysis.name)
+                else:
+                    messages.warning(request, 'Please assign all boundary conditions')
+                    form = NewBCForm(request.POST, mesh=analysis.mesh)
 
-            return redirect('submit', slug=analysis.name)
     else:
-        form = NewBCForm()
+        form = NewBCForm(mesh=analysis.mesh)
     Page = SideBarPage().DicUpdate("bc")
     return render(request, 'bc.html', PageVariables(Page,form,analysis))
 
@@ -313,6 +344,7 @@ def submit_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     if request.method == 'POST':
         form = JobSubmitForm(request.POST)
+        Results.objects.create(analysis=analysis)
         return redirect('result', slug=analysis.name)
     else:
         form = JobSubmitForm()
@@ -321,4 +353,44 @@ def submit_page(request, slug):
 
 
 def result_page(request, slug):
-    return render(request, 'result.html')
+    analysis = get_object_or_404(Analysis, name=slug)
+    Page = SideBarPage().DicUpdate("results")
+    nodes = Nodes.objects.filter(mesh_id=analysis.mesh.id)
+    table = Connectivity.objects.filter(mesh_id=analysis.mesh.id)
+    results=Contour(analysis.mesh.address)
+    step=int(analysis.results.Step)
+    results_contour=results.IntensityReader(step)
+    if request.method == 'POST':
+        form = ResultsForm(request.POST)
+        if form.is_valid():
+            val = form.cleaned_data
+            if val['btn'] == 'Next':
+                step+=1
+
+                try:
+                    results_contour=results.IntensityReader(step)
+                    NewStep=Results.objects.get(analysis=analysis)
+                    NewStep.Step=step
+                    NewStep.save()
+                except:
+                    step-=1
+                    results_contour=results.IntensityReader(step)
+                    messages.warning(request, 'Last Step')
+            elif val['btn'] == 'Previous':
+                step-=1
+                try:
+                    results_contour=results.IntensityReader(step)
+                    NewStep=Results.objects.get(analysis=analysis)
+                    NewStep.Step=step
+                    NewStep.save()
+                except:
+                    step+=1
+                    results_contour=results.IntensityReader(step)
+                    messages.warning(request, 'First Step')
+    else:
+        form = ResultsForm()
+    div = PlotlyPlot(nodes, table, results_contour)
+    dic=PageVariables(Page,form,analysis)
+    dic['graph']=div
+    dic['step']=step
+    return render(request, 'result.html', dic)

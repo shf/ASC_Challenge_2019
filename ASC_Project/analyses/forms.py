@@ -1,6 +1,7 @@
 from django import forms
 from .models import Analysis
 from .models import Mesh
+from .models import Nodes
 from .models import Resin
 from .models import Preform
 from .models import Section
@@ -9,7 +10,6 @@ from .models import BC
 
 from .choice import TYPE_OF_ANALYSIS
 from .choice import TYPE_OF_BC
-
 
 class NewAnalysisForm(forms.ModelForm):
     class Meta:
@@ -62,9 +62,26 @@ class NewBCForm(forms.ModelForm):
     class Meta:
         model = BC
         fields = ['name', 'typ', 'value']
+
+    typ = forms.ChoiceField(label='Boundary Type', choices = TYPE_OF_BC)
+    name = forms.ChoiceField(label='Edge',choices = ())
+    btn = forms.CharField(label='', widget=forms.HiddenInput())
+    def __init__(self, *args, **kwargs):
+        self.mesh = kwargs.pop('mesh')
+        super(NewBCForm, self).__init__(*args, **kwargs)
+        EdgeList=["_None"]
+        for items in Nodes.objects.filter(mesh_id=self.mesh).values():
+            if items['EdgeGroup'] not in EdgeList:
+                EdgeList.append(items['EdgeGroup'])
+        EdgeList.remove("_None")
+        _choices=[]
+        for i in range(len(EdgeList)):
+            _choices.append((EdgeList[i],EdgeList[i]))
+        self.fields['name'].choices = tuple(_choices)
+
     
-    typ = forms.ChoiceField(choices = TYPE_OF_BC)
-
 class JobSubmitForm(forms.Form):
-    btn = forms.CharField(label='')
+    btn = forms.CharField(label='', widget=forms.HiddenInput())
 
+class ResultsForm(forms.Form):
+    btn = forms.CharField(label='', widget=forms.HiddenInput())
