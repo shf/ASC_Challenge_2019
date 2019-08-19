@@ -44,11 +44,13 @@ class MeshImport():
         directory.append("mesh.xml")
         XMLFile = open("/".join(directory), "w")
         XMLFile.write("<dolfin xmlns:dolfin=\"https://fenicsproject.org/\">\n")
-        XMLFile.write("  <mesh celltype=\"triangle\" dim=\"3\">\n")
+        XMLFile.write("  <mesh celltype=\"triangle\" dim=\"2\">\n") # 2d or 3D???
         XMLFile.write("    <vertices size=\"{}\">\n".format(len(_nodes)))
         for num, (key, value) in enumerate(_nodes.items(),0):
-            XMLFile.write("      <vertex index=\"{}\" x=\"{}\" y=\"{}\" z=\"{}\"/>\n".format(
-                num, value[0], value[1], value[2]))
+#           XMLFile.write("      <vertex index=\"{}\" x=\"{}\" y=\"{}\" z=\"{}\"/>\n".format(
+#               num, value[0], value[1], value[2]))
+           XMLFile.write("      <vertex index=\"{}\" x=\"{}\" y=\"{}\" />\n".format(
+               num, value[0], value[1]))
         XMLFile.write("    </vertices>\n")
         XMLFile.write("    <cells size=\"{}\">\n".format(len(_connectivity)))
         for num, (key, value) in enumerate(_connectivity.items(),0):
