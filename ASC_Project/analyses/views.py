@@ -373,7 +373,7 @@ def result_page(request, slug):
     # modifying the paraview server configuration
     with open(directory + '/ParaView-5.7.0/launcher.config','r') as conf:
         data = conf.readlines()
-    data[44]="            \"--data\", \"/mnt/c/Users/nasser/Desktop/ASC_Challenge/ASC_Project/media/{}/results/\",\n".format(analysis.id)
+    data[44]="            \"--data\", \"{}/ASC_Project/media/{}/results/\",\n".format(directory,analysis.id)
     
     
     with open(directory + '/ParaView-5.7.0/launcher.config','w') as conf:
@@ -381,7 +381,7 @@ def result_page(request, slug):
 
     # kill previously run server
     subprocess.call(['killall', 'pvpython']) # this allows for just one concurrent result, 
-    os.system('rm -f /mnt/c/Users/nasser/Desktop/ASC_Challenge/ParaView-5.7.0/viz-logs/*.txt')
+    os.system('rm -f {}/ParaView-5.7.0/viz-logs/*.txt'.format(directory))
     # run new server with modified configuration
     p=subprocess.Popen([directory + '/ParaView-5.7.0/bin/pvpython', 
         directory + '/ParaView-5.7.0/lib/python3.7/site-packages/wslink/launcher.py',
