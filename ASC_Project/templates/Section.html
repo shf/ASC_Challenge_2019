@@ -2,27 +2,67 @@
 
 
 {% block title %}
-  {{ analysis.name }} - {{ block.super }}
+{{ analysis.name }} - {{ block.super }}
 {% endblock %}
 
 {% block Analysis %}
-  {{ analysis.name }}
+{{ analysis.name }}
 {% endblock %}
 
 
 
 {% block PageName %}
-  Section
+Section
 {% endblock %}
 
 
 
 {% block content %}
 
-<form method="post" validate>
-    {% csrf_token %}  
-    {% include 'includes/form.html' %}
-    <button type="submit" class="btn btn-success">Create</button>
-</form>
-
+<div class="container-fluid">
+  {% if messages %}
+  <div class="row">
+    <div class="col-sm-12">
+      {% for message in messages %}
+      <div class="alert alert-{{ message.tags }} text-center" role="alert">
+        {{ message }}
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+  <div class="row">
+    <div class="col-4">
+      <form method="post" validate>
+        {% csrf_token %}
+        {% include 'includes/form.html' %}
+        <button type="submit" class="btn btn-success" name="btn" value="add">Assign Section</button>
+        <button type="submit" class="btn btn-success" name="btn" value="proceed">Proceed to BCs</button>
+      </form>
+    </div>
+    <div class="col-1">
+    </div>
+    <div class="col-7">
+      <h4>Assigned Sections:</h4>
+      <table class="table table-striped">
+        <thead class="thead-inverse">
+          <tr>
+            <th>Section</th>
+            <th>Preforms</th>
+            <th>Rotate</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in sections %}
+          <tr>
+            <td>{{r.name}}</td>
+            <td>{{r.preform}}</td>
+            <td>{{r.rotate}}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 {% endblock %}

@@ -278,32 +278,24 @@ def preform_page(request, slug):
 def section_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     if request.method == 'POST':
-        form = NewSectionForm(request.POST, analysis=analysis, initial={'name':"Section_1"})
+        form = NewSectionForm(request.POST, analysis=analysis,mesh=analysis.mesh)
         if form.is_valid():
             section = form.save(commit=False)
             section.analysis = analysis
-            section.save()
-            return redirect('bc', slug=analysis.name)
+            val = form.cleaned_data
+            if val['btn']=="add":
+                section.save( )
+                form = NewSectionForm(request.POST, analysis=analysis,mesh=analysis.mesh)
+            elif val['btn']=="proceed":
+                if len(analysis.section.values('name').distinct())==analysis.mesh.NumFaces:
+                    return redirect('bc', slug=analysis.name)
+                else:
+                    messages.warning(request, 'Please assign all sections')
+                    form = NewSectionForm(request.POST, analysis=analysis,mesh=analysis.mesh)
     else:
-        form = NewSectionForm(analysis=analysis, initial={'name':"Section_1"})
+        form = NewSectionForm(analysis=analysis,mesh=analysis.mesh)
     Page = SideBarPage().DicUpdate("section")
     return render(request, 'section.html', PageVariables(Page,form,analysis))
-
-
-def step_page(request, slug):
-    analysis = get_object_or_404(Analysis, name=slug)
-    if request.method == 'POST':
-        form = NewStepForm(request.POST, initial={'name':"Step_1"})
-        if form.is_valid():
-            step = form.save(commit=False)
-            step.analysis = analysis
-            step.save()
-
-            return redirect('submit', slug=analysis.name)
-    else:
-        form = NewStepForm(initial={'name':"Step_1"})
-    Page = SideBarPage().DicUpdate("step")
-    return render(request,'step.html', PageVariables(Page,form,analysis))
 
 
 def bc_page(request, slug):
@@ -343,13 +335,28 @@ def bc_page(request, slug):
     Page = SideBarPage().DicUpdate("bc")
     return render(request, 'bc.html', PageVariables(Page,form,analysis))
 
+def step_page(request, slug):
+    analysis = get_object_or_404(Analysis, name=slug)
+    if request.method == 'POST':
+        form = NewStepForm(request.POST, initial={'name':"Step_1"})
+        if form.is_valid():
+            step = form.save(commit=False)
+            step.analysis = analysis
+            step.save()
+
+            return redirect('submit', slug=analysis.name)
+    else:
+        form = NewStepForm(initial={'name':"Step_1"})
+    Page = SideBarPage().DicUpdate("step")
+    return render(request,'step.html', PageVariables(Page,form,analysis))
+
 
 def submit_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     if request.method == 'POST':
         form = JobSubmitForm(request.POST)
         try:        
-            Results.objects.create(analysis=analysis)
+            Results.objects.update_or_create(analysis=analysis)
         except:
             pass
 #        subprocess.call("python3 /mnt/c/Users/shayanfa/Desktop/ASC_Challenge/ASC_Project/analyses/solver/Darcy_CVFEM.py", shell=True)
@@ -366,7 +373,7 @@ def result_page(request, slug):
     # modifying the paraview server configuration
     with open(directory + '/ParaView-5.7.0/launcher.config','r') as conf:
         data = conf.readlines()
-    data[44]="            \"--data\", \"/mnt/c/Users/shayanfa/Desktop/ASC_Challenge/ASC_Project/media/{}/results/\",\n".format(analysis.id)
+    data[44]="            \"--data\", \"/mnt/c/Users/nasser/Desktop/ASC_Challenge/ASC_Project/media/{}/results/\",\n".format(analysis.id)
     
     
     with open(directory + '/ParaView-5.7.0/launcher.config','w') as conf:
@@ -374,7 +381,7 @@ def result_page(request, slug):
 
     # kill previously run server
     subprocess.call(['killall', 'pvpython']) # this allows for just one concurrent result, 
-    os.system('rm -f /mnt/c/Users/shayanfa/Desktop/ASC_Challenge/ParaView-5.7.0/viz-logs/*.txt')
+    os.system('rm -f /mnt/c/Users/nasser/Desktop/ASC_Challenge/ParaView-5.7.0/viz-logs/*.txt')
     # run new server with modified configuration
     p=subprocess.Popen([directory + '/ParaView-5.7.0/bin/pvpython', 
         directory + '/ParaView-5.7.0/lib/python3.7/site-packages/wslink/launcher.py',

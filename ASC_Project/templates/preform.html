@@ -2,63 +2,65 @@
 
 
 {% block title %}
-  {{ analysis.name }} - {{ block.super }}
+{{ analysis.name }} - {{ block.super }}
 {% endblock %}
 
 {% block Analysis %}
-  {{ analysis.name }}
+{{ analysis.name }}
 {% endblock %}
 
 
 {% block PageName %}
-  Preform
+Preform
 {% endblock %}
 
 
 {% block content %}
 
-<div class="container">
-    <div class="row">
-      <div class="col-sm-4">
-          <form method="post" validate>
-            <h4>New preform:</h4>
-            <br>
-            {% csrf_token %}  
-            {% include 'includes/form.html' %}
-            <button type="submit" class="btn btn-success" name="btn" value="add">Add new layer</button>
-            <button type="submit" class="btn btn-success" name="btn" value="proceed">Proceed to section</button>
-            <br>
-            <br>
-          </form>
-      </div>
-      <div class="col-sm-8">
-        <h4>Created Preforms:</h4>
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-4">
+      <form method="post" validate>
+        <h4>New preform:</h4>
         <br>
-        <table class="table table-striped">
-            <thead class="thead-inverse">
-              <tr>
-                <th>Name</th>
-                <th>Thickness</th>
-                <th>K11</th>
-                <th>K12</th>
-                <th>K22</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for r in preforms %}
-                <tr>
-                  <td>{{r.name}}</td>
-                  <td>{{r.thickness}}</td>
-                  <td>{{r.K11}}</td>
-                  <td>{{r.K12}}</td>
-                  <td>{{r.K22}}</td>
-                </tr>
-              {% endfor %}
-            </tbody>
-        </table>
-      </div>
+        {% csrf_token %}
+        {% include 'includes/form.html' %}
+        <button type="submit" class="btn btn-success" name="btn" value="add">Add new layer</button>
+        <button type="submit" class="btn btn-success" name="btn" value="proceed">Proceed to section</button>
+        <br>
+        <br>
+      </form>
+    </div>
+    <div class="col-1">
+    </div>
+    <div class="col-7">
+      <h4>Created Preforms:</h4>
+      <br>
+      <table class="table table-striped">
+        <thead class="thead-inverse">
+          <tr>
+            <th>Name</th>
+            <th>Thickness</th>
+            <th>K11</th>
+            <th>K12</th>
+            <th>K22</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for r in preforms %}
+          <tr>
+            <td>{{r.name}}</td>
+            <td>{{r.thickness}}</td>
+            <td>{{r.K11}}</td>
+            <td>{{r.K12}}</td>
+            <td>{{r.K22}}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
     </div>
   </div>
+</div>
 
 
 {% endblock %}

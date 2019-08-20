@@ -43,13 +43,23 @@ class NewSectionForm(forms.ModelForm):
     class Meta:
         model = Section
         fields = ['name', 'preform', 'rotate']
-
+    name = forms.ChoiceField(label='Face',choices = ())
     preform = forms.ModelChoiceField(queryset = None, initial=0)
-
+    btn = forms.CharField(label='', widget=forms.HiddenInput())
     def __init__(self, *args, **kwargs):
         self.analysis = kwargs.pop('analysis')
+        self.mesh = kwargs.pop('mesh')
         super(NewSectionForm, self).__init__(*args, **kwargs)
         self.fields['preform'].queryset = Preform.objects.filter(analysis=self.analysis)
+        FaceList=["_None"]
+        for items in Nodes.objects.filter(mesh_id=self.mesh).values():
+            if items['FaceGroup'] not in FaceList:
+                FaceList.append(items['FaceGroup'])
+        FaceList.remove("_None")
+        _choices=[]
+        for i in range(len(FaceList)):
+            _choices.append((FaceList[i],FaceList[i]))
+        self.fields['name'].choices = tuple(_choices)
 
 class NewStepForm(forms.ModelForm):
     class Meta:
