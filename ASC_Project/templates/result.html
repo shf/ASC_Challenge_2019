@@ -1,12 +1,22 @@
 {% extends 'BaseSidebar.html' %}
 
 
-{% block breadcrumb %}
-  <li class="breadcrumb-item active">Download the results</li>
+{% block title %}
+{{ analysis.name }} - {{ block.super }}
+{% endblock %}
+
+{% block Analysis %}
+{{ analysis.name }}
+{% endblock %}
+
+
+{% block PageName %}
+Results
 {% endblock %}
 
 {% block content %}
-
-This is results page
+<div class="embed-responsive embed-responsive-16by9">
+        <iframe class="embed-responsive-item" src={{paraview|safe}} allowfullscreen></iframe>
+</div>
 
 {% endblock %}

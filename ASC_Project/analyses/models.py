@@ -81,7 +81,7 @@ class Section(models.Model):
 
 class Step(models.Model):
     name = models.CharField(max_length=30)
-    typ = models.IntegerField(choices=TYPE_OF_ANALYSIS, default=0)
+    typ = models.CharField(max_length=30, choices=TYPE_OF_ANALYSIS, default=0)
     endtime = models.FloatField(default=0, help_text='Time to end analysis')
     analysis = models.OneToOneField(Analysis, related_name='step', on_delete=models.CASCADE)
 
@@ -91,9 +91,14 @@ class Step(models.Model):
 
 class BC(models.Model):
     name = models.CharField(max_length=30)
-    typ = models.IntegerField(choices=TYPE_OF_BC, default=0)
+    typ = models.CharField(max_length=30, choices=TYPE_OF_BC, default=0)
     value = models.FloatField(default=0, help_text='Value on Boundary Condition')
     analysis = models.ForeignKey(Analysis, related_name='bc', on_delete=models.CASCADE)
 
     def __str__(self):
         return self.name
+
+class Results(models.Model):
+    Step=models.IntegerField(default=0)
+    processID=models.IntegerField(default=0)
+    analysis = models.OneToOneField(Analysis, related_name='results', on_delete=models.CASCADE)

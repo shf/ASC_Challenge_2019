@@ -1,9 +1,10 @@
 TYPE_OF_ANALYSIS = (
-    (0, 'Filling the mold'), 
-    (1, 'Time limit'),
+    ('Filling', 'Filling the mold'), 
+    ('Time', 'Time limit'),
 )
 
 TYPE_OF_BC = (
-    (0, 'Pressure'), 
-    (1, 'Flow Rate'),
+    ('Pressure', 'Pressure'), 
+    ('Flow_Rate', 'Flow Rate'),
+    ('Wall',  'Wall')
 )
