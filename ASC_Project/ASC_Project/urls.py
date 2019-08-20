@@ -35,6 +35,7 @@ urlpatterns = [
     path('<slug:slug>/bc/', views.bc_page, name='bc'),
     path('<slug:slug>/submit/', views.submit_page, name='submit'),
     path('<slug:slug>/result/', views.result_page, name='result'),
+    path('<slug:slug>/result_old/', views.result_old_page, name='result_old'),
 ]
 
 if settings.DEBUG:

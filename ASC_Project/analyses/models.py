@@ -64,6 +64,7 @@ class Preform(models.Model):
     K11 = models.FloatField(default=1e-10, help_text='Enter a number for K11')
     K12 = models.FloatField(default=0, help_text='Enter a number for K12')
     K22 = models.FloatField(default=2e-10, help_text='Enter a number for K22')
+    phi = models.FloatField(default=0.5, help_text='Enter a number for volume fraction')
     analysis = models.ForeignKey(Analysis, related_name='preform', on_delete=models.CASCADE)
 
     def __str__(self):
@@ -82,7 +83,13 @@ class Section(models.Model):
 class Step(models.Model):
     name = models.CharField(max_length=30)
     typ = models.CharField(max_length=30, choices=TYPE_OF_ANALYSIS, default=0)
-    endtime = models.FloatField(default=0, help_text='Time to end analysis')
+    endtime = models.FloatField()
+    outputstep = models.FloatField()
+    maxiterations = models.IntegerField()
+    maxhaltsteps = models.IntegerField()
+    minchangesaturation = models.FloatField()
+    timescaling = models.FloatField()
+    fillthreshold = models.FloatField()
     analysis = models.OneToOneField(Analysis, related_name='step', on_delete=models.CASCADE)
 
     def __str__(self):

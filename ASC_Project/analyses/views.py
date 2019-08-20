@@ -1,24 +1,22 @@
-# to convert string to dict
-import ast
-
+import os
 import subprocess
-
 
 import plotly.graph_objs as go
 import plotly.offline as opy
 from django.conf import settings
+from django.contrib import messages
 from django.core.files.storage import FileSystemStorage
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaulttags import register
-from django.contrib import messages
 
-from .forms import (MeshConfirmationForm, NewAnalysisForm, NewBCForm,
-                    NewMeshForm, NewPreformForm, NewResinForm, NewSectionForm,
-                    NewStepForm, JobSubmitForm, ResultsForm)
+from .forms import (JobSubmitForm, MeshConfirmationForm, NewAnalysisForm,
+                    NewBCForm, NewMeshForm, NewPreformForm, NewResinForm,
+                    NewSectionForm, NewStepForm, ResultsForm)
 from .models import (BC, Analysis, Connectivity, Mesh, Nodes, Preform, Resin,
-                     Section, Step, Results)
-from .solver.Importers import MeshImport, Contour
+                     Results, Section, Step)
+from .solver.Analysis_solver import solve_darcy
+from .solver.Importers import Contour, MeshImport
 
 
 def PlotlyPlot (nodes, table, intensity):
@@ -64,7 +62,7 @@ def PlotlyPlot (nodes, table, intensity):
             showscale=showscale,
             
             color='darkturquoise',
-            colorscale='RdBu',
+            colorscale='Rainbow',
             colorbar_title=colorbar_title,
             intensity=intensity,
             i=ii,
@@ -93,9 +91,9 @@ def PlotlyPlot (nodes, table, intensity):
                     visible=False
                 ),
                 camera=dict(
-                    up=dict(x=0, y=0, z=0),
+                    up=dict(x=0, y=0, z=1),
                     center=dict(x=0, y=0, z=0),
-                    eye=dict(x=0, y=0, z=1.5)
+                    eye=dict(x=0, y=0, z=-1.5)
                 )
             )
     )
@@ -160,14 +158,14 @@ def PageVariables(Page,form,analysis):
 def home(request):
     analysis = Analysis.objects.all()
     if request.method == 'POST':
-        form = NewAnalysisForm(request.POST)
+        form = NewAnalysisForm(request.POST, initial={'name':"Analysis_1"})
         if form.is_valid():
             analysis = form.save(commit=False)
             analysis.save()
 
             return redirect('mesh', slug=analysis.name)
     else:
-        form = NewAnalysisForm()
+        form = NewAnalysisForm(initial={'name':"Analysis_1"})
     Page = SideBarPage().DicUpdate("")
     return render(request, 'home.html', {'page':Page, 'form': form})
 
@@ -246,14 +244,14 @@ def display_mesh(request, slug, pk):
 def resin_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     if request.method == 'POST':
-        form = NewResinForm(request.POST)
+        form = NewResinForm(request.POST, initial={'name':"Resin_1"})
         if form.is_valid():
             resin = form.save(commit=False)
             resin.analysis = analysis
             resin.save()
             return redirect('preform', slug=analysis.name)
     else:
-        form = NewResinForm()
+        form = NewResinForm(initial={'name':"Resin_1"})
     Page = SideBarPage().DicUpdate("resin")
     return render(request, 'resin.html', PageVariables(Page,form,analysis))
 
@@ -280,14 +278,14 @@ def preform_page(request, slug):
 def section_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     if request.method == 'POST':
-        form = NewSectionForm(request.POST, analysis=analysis)
+        form = NewSectionForm(request.POST, analysis=analysis, initial={'name':"Section_1"})
         if form.is_valid():
             section = form.save(commit=False)
             section.analysis = analysis
             section.save()
-            return redirect('step', slug=analysis.name)
+            return redirect('bc', slug=analysis.name)
     else:
-        form = NewSectionForm(analysis=analysis)
+        form = NewSectionForm(analysis=analysis, initial={'name':"Section_1"})
     Page = SideBarPage().DicUpdate("section")
     return render(request, 'section.html', PageVariables(Page,form,analysis))
 
@@ -295,15 +293,15 @@ def section_page(request, slug):
 def step_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     if request.method == 'POST':
-        form = NewStepForm(request.POST)
+        form = NewStepForm(request.POST, initial={'name':"Step_1"})
         if form.is_valid():
             step = form.save(commit=False)
             step.analysis = analysis
             step.save()
 
-            return redirect('bc', slug=analysis.name)
+            return redirect('submit', slug=analysis.name)
     else:
-        form = NewStepForm()
+        form = NewStepForm(initial={'name':"Step_1"})
     Page = SideBarPage().DicUpdate("step")
     return render(request,'step.html', PageVariables(Page,form,analysis))
 
@@ -335,7 +333,7 @@ def bc_page(request, slug):
                 form = NewBCForm(request.POST, mesh=analysis.mesh)
             elif val['btn']=="proceed":
                 if len(analysis.bc.values())==analysis.mesh.NumEdges:
-                    return redirect('submit', slug=analysis.name)
+                    return redirect('step', slug=analysis.name)
                 else:
                     messages.warning(request, 'Please assign all boundary conditions')
                     form = NewBCForm(request.POST, mesh=analysis.mesh)
@@ -350,32 +348,37 @@ def submit_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     if request.method == 'POST':
         form = JobSubmitForm(request.POST)
-        Results.objects.create(analysis=analysis)
+        try:        
+            Results.objects.create(analysis=analysis)
+        except:
+            pass
+#        subprocess.call("python3 /mnt/c/Users/shayanfa/Desktop/ASC_Challenge/ASC_Project/analyses/solver/Darcy_CVFEM.py", shell=True)
+        solve_darcy(analysis)
         return redirect('result', slug=analysis.name)
     else:
         form = JobSubmitForm()
     Page = SideBarPage().DicUpdate("submit")
     return render(request, 'submit.html', PageVariables(Page,form,analysis))
-import os
+
 def result_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
-    
+    directory = os.path.abspath(os.path.join(os.getcwd(), '..'))
     # modifying the paraview server configuration
-    with open('/mnt/c/Users/nasser/Desktop/ASC_Challenge/ParaView-5.7.0/launcher.config','r') as conf:
+    with open(directory + '/ParaView-5.7.0/launcher.config','r') as conf:
         data = conf.readlines()
-    data[44]="            \"--data\", \"/mnt/c/Users/nasser/Desktop/ASC_Challenge/ASC_Project/media/{}/results/\",\n".format(analysis.id)
+    data[44]="            \"--data\", \"/mnt/c/Users/shayanfa/Desktop/ASC_Challenge/ASC_Project/media/{}/results/\",\n".format(analysis.id)
     
     
-    with open('/mnt/c/Users/nasser/Desktop/ASC_Challenge/ParaView-5.7.0/launcher.config','w') as conf:
+    with open(directory + '/ParaView-5.7.0/launcher.config','w') as conf:
         conf.writelines( data )
 
     # kill previously run server
     subprocess.call(['killall', 'pvpython']) # this allows for just one concurrent result, 
-    os.system('rm -f /mnt/c/Users/nasser/Desktop/ASC_Challenge/ParaView-5.7.0/viz-logs/*.txt')
+    os.system('rm -f /mnt/c/Users/shayanfa/Desktop/ASC_Challenge/ParaView-5.7.0/viz-logs/*.txt')
     # run new server with modified configuration
-    p=subprocess.Popen(['/mnt/c/Users/nasser/Desktop/ASC_Challenge/ParaView-5.7.0/bin/pvpython', 
-        '/mnt/c/Users/nasser/Desktop/ASC_Challenge/ParaView-5.7.0/lib/python3.7/site-packages/wslink/launcher.py',
-        '/mnt/c/Users/nasser/Desktop/ASC_Challenge/ParaView-5.7.0/launcher.config'],
+    p=subprocess.Popen([directory + '/ParaView-5.7.0/bin/pvpython', 
+        directory + '/ParaView-5.7.0/lib/python3.7/site-packages/wslink/launcher.py',
+        directory + '/ParaView-5.7.0/launcher.config'],
         )
     # save the process id to database, might be useful for concurrent visulization
     analysis.results.processID = p.pid
@@ -385,3 +388,46 @@ def result_page(request, slug):
     dic=PageVariables(Page,form,analysis)
     dic['paraview'] = "http://127.0.0.1:8080/"
     return render(request, 'result.html', dic)
+
+def result_old_page(request, slug):
+    analysis = get_object_or_404(Analysis, name=slug)
+    Page = SideBarPage().DicUpdate("results")
+    nodes = Nodes.objects.filter(mesh_id=analysis.mesh.id)
+    table = Connectivity.objects.filter(mesh_id=analysis.mesh.id)
+    results=Contour(analysis.mesh.address)
+    step=int(analysis.results.Step)
+    results_contour=results.IntensityReader(step)
+    if request.method == 'POST':
+        form = ResultsForm(request.POST)
+        if form.is_valid():
+            val = form.cleaned_data
+            if val['btn'] == 'Next':
+                step+=1
+
+                try:
+                    results_contour=results.IntensityReader(step)
+                    NewStep=Results.objects.get(analysis=analysis)
+                    NewStep.Step=step
+                    NewStep.save()
+                except:
+                    step-=1
+                    results_contour=results.IntensityReader(step)
+                    messages.warning(request, 'Last Step')
+            elif val['btn'] == 'Previous':
+                step-=1
+                try:
+                    results_contour=results.IntensityReader(step)
+                    NewStep=Results.objects.get(analysis=analysis)
+                    NewStep.Step=step
+                    NewStep.save()
+                except:
+                    step+=1
+                    results_contour=results.IntensityReader(step)
+                    messages.warning(request, 'First Step')
+    else:
+        form = ResultsForm()
+    div = PlotlyPlot(nodes, table, results_contour)
+    dic=PageVariables(Page,form,analysis)
+    dic['graph']=div
+    dic['step']=step
+    return render(request, 'result_old.html', dic)

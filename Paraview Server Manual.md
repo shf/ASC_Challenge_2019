@@ -95,14 +95,14 @@ run following commands and replace `{$pvw-user}` with your ubuntu username:
 * `sudo usermod -a -G mappingfileusers {$pvw-user}`
 * `newgrp mappingfileusers`
 * `sudo usermod -a -G mappingfileusers daemon`
-* `sudo chgrp mappingfileusers mapping/proxy.txt`
-* `sudo chmod 660 mapping/proxy.txt`
+* `sudo chgrp mappingfileusers ApacheWeb/mapping/proxy.txt`
+* `sudo chmod 660 ApacheWeb/mapping/proxy.txt`
 
 ### adding a virtual host to apache:
 
 * create a virtual host configuration:
-`sudo touch /etc/apache2/sites-available/001-pvw.conf`
-`sudo nano /etc/apache2/sites-available/001-pvw.conf`
+- `sudo touch /etc/apache2/sites-available/001-pvw.conf`
+- `sudo nano /etc/apache2/sites-available/001-pvw.conf`
 * create two files `{$MainDirectory}/ApacheWeb/error.log` and `{$MainDirectory}/ApacheWeb/access.log`
 * replace following content within the file:
 make sure you replace `{$MainDirectory}` to main directory.
@@ -111,7 +111,7 @@ make sure you replace `{$MainDirectory}` to main directory.
 <VirtualHost *:80>
     ServerName localhost
     ServerAdmin webmaster@example-host.example.com
-    DocumentRoot {$MainDirectory}/ApacheWeb/webrot/
+    DocumentRoot {$MainDirectory}/ApacheWeb/webroot/
     ErrorLog {$MainDirectory}/ApacheWeb/error.log
     CustomLog {$MainDirectory}/ApacheWeb/access.log combined
 
@@ -136,7 +136,7 @@ make sure you replace `{$MainDirectory}` to main directory.
     RewriteEngine On
 
     # This is the path the mapping file Jetty creates
-    RewriteMap session-to-port txt:{$MappingProxy}
+    RewriteMap session-to-port txt:{$MainDirectory}/ApacheWeb/mapping/proxy.txt
 
     # This is the rewrite condition. Look for anything with a sessionId= in the query part of the URL and capture the value to use below.
     RewriteCond %{QUERY_STRING}     ^sessionId=(.*)&path=(.*)$ [NC]
@@ -155,13 +155,16 @@ make sure you replace `{$MainDirectory}` to main directory.
 </VirtualHost>
 ```
 * you will need to enable the modules that will be used by our ParaViewWeb virtual host
-`sudo a2enmod vhost_alias`
-`sudo a2enmod proxy`
-`sudo a2enmod proxy_http`
-`sudo a2enmod proxy_wstunnel`
-`sudo a2enmod rewrite`
+- `sudo a2enmod vhost_alias`
+- `sudo a2enmod proxy`
+- `sudo a2enmod proxy_http`
+- `sudo a2enmod proxy_wstunnel`
+- `sudo a2enmod rewrite`
+
+* Add the following line to the end of `/etc/apache2/apache2.conf`
+`AcceptFilter http none`
 
 * Then enable the virtual host you created above and restart Apache
-`sudo a2ensite 001-pvw.conf`
-`sudo service apache2 restart`
-`sudo a2dissite 000-default.conf`
+- `sudo a2ensite 001-pvw.conf`
+- `sudo a2dissite 000-default.conf`
+- `sudo service apache2 restart`
