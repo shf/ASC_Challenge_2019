@@ -10,5 +10,6 @@ Darcy
 migrations/
 
 # SQLite database files
-
+ParaView-5.7.0
 *.sqlite3
+ApacheWeb

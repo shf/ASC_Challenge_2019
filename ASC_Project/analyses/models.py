@@ -107,4 +107,5 @@ class BC(models.Model):
 
 class Results(models.Model):
     Step=models.IntegerField(default=0)
+    processID=models.IntegerField(default=0)
     analysis = models.OneToOneField(Analysis, related_name='results', on_delete=models.CASCADE)
