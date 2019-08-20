@@ -7,6 +7,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaulttags import register
 from django.contrib import messages
 
+import subprocess
+
 from .forms import (MeshConfirmationForm, NewAnalysisForm, NewBCForm,
                     NewMeshForm, NewPreformForm, NewResinForm, NewSectionForm,
                     NewStepForm, JobSubmitForm, ResultsForm)
@@ -14,6 +16,7 @@ from .models import (BC, Analysis, Connectivity, Mesh, Nodes, Preform, Resin,
                      Section, Step, Results)
 from .solver.Importers import MeshImport, Contour
 
+from .solver.Analysis_solver import solve_darcy
 
 def PlotlyPlot (nodes, table, intensity):
     xn = []
@@ -58,7 +61,7 @@ def PlotlyPlot (nodes, table, intensity):
             showscale=showscale,
             
             color='darkturquoise',
-            colorscale='RdBu',
+            colorscale='Rainbow',
             colorbar_title=colorbar_title,
             intensity=intensity,
             i=ii,
@@ -87,9 +90,9 @@ def PlotlyPlot (nodes, table, intensity):
                     visible=False
                 ),
                 camera=dict(
-                    up=dict(x=0, y=0, z=0),
+                    up=dict(x=0, y=0, z=1),
                     center=dict(x=0, y=0, z=0),
-                    eye=dict(x=0, y=0, z=1.5)
+                    eye=dict(x=0, y=0, z=-1.5)
                 )
             )
     )
@@ -154,14 +157,14 @@ def PageVariables(Page,form,analysis):
 def home(request):
     analysis = Analysis.objects.all()
     if request.method == 'POST':
-        form = NewAnalysisForm(request.POST)
+        form = NewAnalysisForm(request.POST, initial={'name':"Analysis_1"})
         if form.is_valid():
             analysis = form.save(commit=False)
             analysis.save()
 
             return redirect('mesh', slug=analysis.name)
     else:
-        form = NewAnalysisForm()
+        form = NewAnalysisForm(initial={'name':"Analysis_1"})
     Page = SideBarPage().DicUpdate("")
     return render(request, 'home.html', {'page':Page, 'form': form})
 
@@ -240,14 +243,14 @@ def display_mesh(request, slug, pk):
 def resin_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     if request.method == 'POST':
-        form = NewResinForm(request.POST)
+        form = NewResinForm(request.POST, initial={'name':"Resin_1"})
         if form.is_valid():
             resin = form.save(commit=False)
             resin.analysis = analysis
             resin.save()
             return redirect('preform', slug=analysis.name)
     else:
-        form = NewResinForm()
+        form = NewResinForm(initial={'name':"Resin_1"})
     Page = SideBarPage().DicUpdate("resin")
     return render(request, 'resin.html', PageVariables(Page,form,analysis))
 
@@ -274,14 +277,14 @@ def preform_page(request, slug):
 def section_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     if request.method == 'POST':
-        form = NewSectionForm(request.POST, analysis=analysis)
+        form = NewSectionForm(request.POST, analysis=analysis, initial={'name':"Section_1"})
         if form.is_valid():
             section = form.save(commit=False)
             section.analysis = analysis
             section.save()
-            return redirect('step', slug=analysis.name)
+            return redirect('bc', slug=analysis.name)
     else:
-        form = NewSectionForm(analysis=analysis)
+        form = NewSectionForm(analysis=analysis, initial={'name':"Section_1"})
     Page = SideBarPage().DicUpdate("section")
     return render(request, 'section.html', PageVariables(Page,form,analysis))
 
@@ -289,15 +292,15 @@ def section_page(request, slug):
 def step_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     if request.method == 'POST':
-        form = NewStepForm(request.POST)
+        form = NewStepForm(request.POST, initial={'name':"Step_1"})
         if form.is_valid():
             step = form.save(commit=False)
             step.analysis = analysis
             step.save()
 
-            return redirect('bc', slug=analysis.name)
+            return redirect('submit', slug=analysis.name)
     else:
-        form = NewStepForm()
+        form = NewStepForm(initial={'name':"Step_1"})
     Page = SideBarPage().DicUpdate("step")
     return render(request,'step.html', PageVariables(Page,form,analysis))
 
@@ -329,7 +332,7 @@ def bc_page(request, slug):
                 form = NewBCForm(request.POST, mesh=analysis.mesh)
             elif val['btn']=="proceed":
                 if len(analysis.bc.values())==analysis.mesh.NumEdges:
-                    return redirect('submit', slug=analysis.name)
+                    return redirect('step', slug=analysis.name)
                 else:
                     messages.warning(request, 'Please assign all boundary conditions')
                     form = NewBCForm(request.POST, mesh=analysis.mesh)
@@ -344,7 +347,12 @@ def submit_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     if request.method == 'POST':
         form = JobSubmitForm(request.POST)
-        Results.objects.create(analysis=analysis)
+        try:        
+            Results.objects.create(analysis=analysis)
+        except:
+            pass
+#        subprocess.call("python3 /mnt/c/Users/shayanfa/Desktop/ASC_Challenge/ASC_Project/analyses/solver/Darcy_CVFEM.py", shell=True)
+        solve_darcy(analysis)
         return redirect('result', slug=analysis.name)
     else:
         form = JobSubmitForm()
