@@ -5,7 +5,10 @@ venv/
 *.pyc
 media/
 UserFiles/
+Darcy
+pybind11-2.2.3/
 .vscode/
+mshr/
 migrations/
 
 # SQLite database files
