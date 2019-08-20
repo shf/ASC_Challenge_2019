@@ -8,7 +8,6 @@ fenics-ffc==2019.1.0.post0
 fenics-fiat==2019.1.0
 fenics-ufl==2019.1.0
 mpmath==1.1.0
-mshr==2019.2.0.dev0
 numpy==1.17.0
 pep8==1.7.1
 pkgconfig==1.5.1
@@ -19,4 +18,3 @@ retrying==1.3.3
 six==1.12.0
 sqlparse==0.3.0
 sympy==1.4
-termcolor==1.1.0
