@@ -1,6 +1,9 @@
 # to convert string to dict
 import ast
 
+import subprocess
+
+
 import plotly.graph_objs as go
 import plotly.offline as opy
 from django.conf import settings
@@ -353,47 +356,32 @@ def submit_page(request, slug):
         form = JobSubmitForm()
     Page = SideBarPage().DicUpdate("submit")
     return render(request, 'submit.html', PageVariables(Page,form,analysis))
-
-
+import os
 def result_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
-    Page = SideBarPage().DicUpdate("results")
-    nodes = Nodes.objects.filter(mesh_id=analysis.mesh.id)
-    table = Connectivity.objects.filter(mesh_id=analysis.mesh.id)
-    results=Contour(analysis.mesh.address)
-    step=int(analysis.results.Step)
-    results_contour=results.IntensityReader(step)
-    if request.method == 'POST':
-        form = ResultsForm(request.POST)
-        if form.is_valid():
-            val = form.cleaned_data
-            if val['btn'] == 'Next':
-                step+=1
+    
+    # modifying the paraview server configuration
+    with open('/mnt/c/Users/nasser/Desktop/ASC_Challenge/ParaView-5.7.0/launcher.config','r') as conf:
+        data = conf.readlines()
+    data[44]="            \"--data\", \"/mnt/c/Users/nasser/Desktop/ASC_Challenge/ASC_Project/media/{}/results/\",\n".format(analysis.id)
+    
+    
+    with open('/mnt/c/Users/nasser/Desktop/ASC_Challenge/ParaView-5.7.0/launcher.config','w') as conf:
+        conf.writelines( data )
 
-                try:
-                    results_contour=results.IntensityReader(step)
-                    NewStep=Results.objects.get(analysis=analysis)
-                    NewStep.Step=step
-                    NewStep.save()
-                except:
-                    step-=1
-                    results_contour=results.IntensityReader(step)
-                    messages.warning(request, 'Last Step')
-            elif val['btn'] == 'Previous':
-                step-=1
-                try:
-                    results_contour=results.IntensityReader(step)
-                    NewStep=Results.objects.get(analysis=analysis)
-                    NewStep.Step=step
-                    NewStep.save()
-                except:
-                    step+=1
-                    results_contour=results.IntensityReader(step)
-                    messages.warning(request, 'First Step')
-    else:
-        form = ResultsForm()
-    div = PlotlyPlot(nodes, table, results_contour)
+    # kill previously run server
+    subprocess.call(['killall', 'pvpython']) # this allows for just one concurrent result, 
+    os.system('rm -f /mnt/c/Users/nasser/Desktop/ASC_Challenge/ParaView-5.7.0/viz-logs/*.txt')
+    # run new server with modified configuration
+    p=subprocess.Popen(['/mnt/c/Users/nasser/Desktop/ASC_Challenge/ParaView-5.7.0/bin/pvpython', 
+        '/mnt/c/Users/nasser/Desktop/ASC_Challenge/ParaView-5.7.0/lib/python3.7/site-packages/wslink/launcher.py',
+        '/mnt/c/Users/nasser/Desktop/ASC_Challenge/ParaView-5.7.0/launcher.config'],
+        )
+    # save the process id to database, might be useful for concurrent visulization
+    analysis.results.processID = p.pid
+    analysis.results.save()
+    Page = SideBarPage().DicUpdate("results")
+    form="form"
     dic=PageVariables(Page,form,analysis)
-    dic['graph']=div
-    dic['step']=step
+    dic['paraview'] = "http://127.0.0.1:8080/"
     return render(request, 'result.html', dic)

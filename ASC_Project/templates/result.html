@@ -15,45 +15,8 @@ Results
 {% endblock %}
 
 {% block content %}
-<div class="container">
-    <div class="row">
-        <div class="col-6">
-            <form method="post" validate>
-                {% csrf_token %}
-                {% include 'includes/form.html' %}
-                <div class="row">
-                    <div class="col-4">
-                        <button type="submit" class="btn btn-info btn-lg" name="btn" value="Previous">Previous
-                            Step</button>
-                    </div>
-                    <div class="col-4">
-                        <div class="alert alert-primary" role="alert">
-                            Step: {{ step }}
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <button type="submit" class="btn btn-info btn-lg" name="btn" value="Next">Next Step</button>
-                    </div>
-                </div>
-                <br>
-                <br>
-            </form>
-        </div>
-        <div class="col-6">
-            {% if messages %}
-            {% for message in messages %}
-            <br>
-            <div class="alert alert-warning text-center" role="alert">
-                {{ message }}
-            </div>
-            {% endfor %}
-            {% endif %}
-        </div>
-    </div>
+<div class="embed-responsive embed-responsive-16by9">
+        <iframe class="embed-responsive-item" src={{paraview|safe}} allowfullscreen></iframe>
 </div>
-{% if graph %}
-<div>
-    {{ graph|safe }}
-</div>
-{% endif %}
+
 {% endblock %}
