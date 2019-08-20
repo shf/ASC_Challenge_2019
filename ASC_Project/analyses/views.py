@@ -378,11 +378,7 @@ def submit_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     if request.method == 'POST':
         form = JobSubmitForm(request.POST)
-        try:
-            Results.objects.update_or_create(analysis=analysis)
-        except:
-            pass
-#        subprocess.call("python3 /mnt/c/Users/shayanfa/Desktop/ASC_Challenge/ASC_Project/analyses/solver/Darcy_CVFEM.py", shell=True)
+        Results.objects.update_or_create(analysis=analysis)
         solve_darcy(analysis)
         return redirect('result', slug=analysis.name)
     else:
