@@ -123,7 +123,7 @@ class Contour():
     def IntensityReader(self,step):
         pvdAddress=self._FileAddress.split(".")[0]
         pvdAddress=pvdAddress.split("/")[0]
-        vtuAdress="media/"+pvdAddress+'/result{:06d}'.format(int(step))+".vtu"
+        vtuAdress="media/"+pvdAddress+'/results/flowfrontvstime{:06d}'.format(int(step))+".vtu"
         vtuFile=open(vtuAdress, "r").readlines()
         flag = False
         for line in vtuFile:

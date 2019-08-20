@@ -23,7 +23,8 @@ class Darcy_CVFEM():
     def __init__(self, input):
         _data_handling = input['analysis']
 #        _ICs = input['ICs']
-        _mat = input['materials']
+        _resin = input['resin']
+        _sections = input['sections']
 #        _sec = input['sections']
         _inlets = input['BCs']['inlets']
         _outlets = input['BCs']['outlets']
@@ -34,8 +35,8 @@ class Darcy_CVFEM():
         
         self._logging(_data_handling)
         self._create_output_files(_data_handling)
-        self._define_resin(_mat)
-        self._define_sections(_mat)
+        self._define_resin(_resin)
+        self._define_sections(_sections)
         self._mesh_initialization(_data_handling)
         self._define_function_space(self._mesh)
 #        self._define_functions(_ICs)
@@ -71,22 +72,29 @@ class Darcy_CVFEM():
 
         self._message_file.write("File handlers created Successfully.\n")
 
-    def _define_resin(self, _mat):
+    def _define_resin(self, _resin):
 
-        self._mu = _mat['resin']['viscosity']
-        self._mu_exp = fe.Constant(self._mu)
+        self._mu_exp = fe.Constant(_resin['viscosity'])
+        self._message_file.write("Resin material (viscosity = "+  str(_resin['viscosity']) + ") created successfully. \n")
 
-        self._message_file.write("Resin material created successfully. \n")
+    def _define_sections(self, _sections):
 
-    def _define_sections(self, _mat):
+        self._k_exp = {}
+        self._h = {}
+        self._phi = {}
+        self._message_file.write("Creating Sections ... \n")
+        for section_id in _sections.keys():
+            self._k_exp[section_id] = fe.as_matrix(((_sections[section_id]['K11'], _sections[section_id]['K12'])
+            , (_sections[section_id]['K12'], _sections[section_id]['K22'])))
+            self._h[section_id] = _sections[section_id]['thickness']
+            self._phi[section_id] = _sections[section_id]['volume_fraction']
+            self._message_file.write("Section number: " + str(section_id) + "\n")
+            self._message_file.write("Section permeability: " + str(self._k_exp[section_id]) + "\n")
+            self._message_file.write("Section thickness: " + str(self._h[section_id]) + "\n")
+            self._message_file.write("Section volume fraction: " + str(self._phi[section_id]) + "\n")
 
-        self._k = _mat['preform']['K11']
-        self._k_exp = fe.Constant(self._k)
-        self._h = _mat['preform']['thickness']
-        self._phi = _mat['preform']['volume_fraction']
+        self._message_file.write("Section material created successfully. \n")
 
-        self._message_file.write("Preform material created successfully. \n")    
-    
     def _mesh_initialization(self, _data_handling):
 
         '''
@@ -107,7 +115,7 @@ class Darcy_CVFEM():
 
         for i in range(len(self._cell_voll)):
             for shared_cell in fe.cells(fe.MeshEntity(self._mesh, self._mesh.topology().dim()-2, i)):
-                self._cell_voll[i] = self._cell_voll[i] + (shared_cell.volume()/3.0)*self._h*self._phi
+                self._cell_voll[i] = self._cell_voll[i] + (shared_cell.volume()/3.0)*self._h[0]*self._phi[0]
 
         # Create the markers
         self._BoundaryEdges = fe.BoundaryMesh(self._mesh, 'exterior').entity_map(1).array()
@@ -246,10 +254,10 @@ class Darcy_CVFEM():
         V = self._vel
         FFvsTime = self._FFvsTime
         
-        k_exp = self._k_exp
+        k_exp = self._k_exp[0]
         mu_exp = self._mu_exp
-        h = self._h
-        phi = self._phi
+        h = self._h[0]
+        phi = self._phi[0]
         g = self._body_force
         w = self._wall_condition
 
@@ -468,13 +476,13 @@ class Darcy_CVFEM():
                 self._flowfrontfile << ffvstimeh
                 break
             elif numerator == self._max_nofiteration:
-                self._message_file.write('Maximum iteration number' + str(max_nofiteration) + ' is reached! \n')
+                self._message_file.write('Maximum iteration number ' + str(self._max_nofiteration) + ' is reached! \n')
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
                 self._flowfrontfile << ffvstimeh
                 break
             elif self._termination_para > self._Number_consecutive_steps:
-                self._message_file.write('Saturation halted for' + str() + 'iterations! \n')
+                self._message_file.write('Saturation halted for ' + str(self._termination_para) + ' iterations! \n')
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
                 self._flowfrontfile << ffvstimeh

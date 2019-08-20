@@ -282,7 +282,7 @@ def section_page(request, slug):
             section = form.save(commit=False)
             section.analysis = analysis
             section.save()
-            return redirect('step', slug=analysis.name)
+            return redirect('bc', slug=analysis.name)
     else:
         form = NewSectionForm(analysis=analysis, initial={'name':"Section_1"})
     Page = SideBarPage().DicUpdate("section")
@@ -298,7 +298,7 @@ def step_page(request, slug):
             step.analysis = analysis
             step.save()
 
-            return redirect('bc', slug=analysis.name)
+            return redirect('submit', slug=analysis.name)
     else:
         form = NewStepForm(initial={'name':"Step_1"})
     Page = SideBarPage().DicUpdate("step")
@@ -332,7 +332,7 @@ def bc_page(request, slug):
                 form = NewBCForm(request.POST, mesh=analysis.mesh)
             elif val['btn']=="proceed":
                 if len(analysis.bc.values())==analysis.mesh.NumEdges:
-                    return redirect('submit', slug=analysis.name)
+                    return redirect('step', slug=analysis.name)
                 else:
                     messages.warning(request, 'Please assign all boundary conditions')
                     form = NewBCForm(request.POST, mesh=analysis.mesh)
@@ -345,12 +345,6 @@ def bc_page(request, slug):
 
 def submit_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
-    EdgeList = {}
-    for items in Nodes.objects.filter(mesh_id=analysis.mesh).values():
-        if items['EdgeGroup'] not in EdgeList.keys():
-            EdgeList[items['EdgeGroup']] = []
-        EdgeList[items['EdgeGroup']].append(items['NodeNum'])
-    del EdgeList["_None"]
     if request.method == 'POST':
         form = JobSubmitForm(request.POST)
         try:        
@@ -358,7 +352,7 @@ def submit_page(request, slug):
         except:
             pass
 #        subprocess.call("python3 /mnt/c/Users/shayanfa/Desktop/ASC_Challenge/ASC_Project/analyses/solver/Darcy_CVFEM.py", shell=True)
-        solve_darcy(analysis.id, EdgeList)
+        solve_darcy(analysis)
         return redirect('result', slug=analysis.name)
     else:
         form = JobSubmitForm()
