@@ -10,6 +10,8 @@ from .models import BC
 
 from .choice import TYPE_OF_ANALYSIS
 from .choice import TYPE_OF_BC
+from .choice import CONDITION_OF_BC
+from .choice import BINARY_CHOICES
 
 class NewAnalysisForm(forms.ModelForm):
     class Meta:
@@ -22,10 +24,8 @@ class NewMeshForm(forms.ModelForm):
         fields = ['address']
 
 class MeshConfirmationForm(forms.Form):
-    CHOICES=[('yes','Yes'),
-         ('no','No')]
     like = forms.CharField(label= 'Do you confirm the mesh?', 
-        widget=forms.RadioSelect(choices=CHOICES))
+        widget=forms.RadioSelect(choices=BINARY_CHOICES))
 
 
 class NewResinForm(forms.ModelForm):
@@ -66,7 +66,7 @@ class NewStepForm(forms.ModelForm):
         model = Step
         fields = ['name', 'typ', 'endtime', 'outputstep', 'maxiterations', 'maxhaltsteps', 'minchangesaturation', 'minchangesaturation', 'timescaling', 'fillthreshold']
     
-    typ = forms.ChoiceField(label='Termination type', choices = TYPE_OF_ANALYSIS)
+    typ = forms.ChoiceField(label='Termination type', choices=TYPE_OF_ANALYSIS, help_text='The analysis might terminate with unfilled region if you choose "Fill the outlet"')
     endtime = forms.FloatField(label='End time', initial='1000', help_text='End time of analysis')
     outputstep = forms.FloatField(label='Output time step', initial='0.01', help_text='Step size for writing output')
     maxiterations = forms.IntegerField(label='Maximum iteration number', initial='10000', help_text='Maximum number of iterations')
@@ -79,9 +79,11 @@ class NewStepForm(forms.ModelForm):
 class NewBCForm(forms.ModelForm):
     class Meta:
         model = BC
-        fields = ['name', 'typ', 'value']
+        fields = ['name', 'typ', 'condition', 'value']
 
     typ = forms.ChoiceField(label='Boundary Type', choices = TYPE_OF_BC)
+    condition = forms.ChoiceField(label='How to enforce', choices = CONDITION_OF_BC, help_text='''The inlet boundary can be described using pressure or flow-rate.
+        The outlet can just accept pressure. For walls choose None.''')
     name = forms.ChoiceField(label='Edge',choices = ())
     btn = forms.CharField(label='', widget=forms.HiddenInput())
     def __init__(self, *args, **kwargs):

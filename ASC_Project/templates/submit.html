@@ -64,8 +64,9 @@ Submit job
       <tr>
         <td class="align-middle">Boundary Conditions</td>
         <td class="align-middle">
-          {% for bc in bcs %}
+          {% for bc in bc %}
           {{ bc.name }}.type: {{ bc.typ }}<br>
+          {{ bc.name }}.condition: {{ bc.condition }}<br>
           {{ bc.name }}.value: {{ bc.value }}<br>
           {% endfor %}
         </td>
