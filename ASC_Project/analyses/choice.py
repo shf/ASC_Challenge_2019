@@ -1,10 +1,21 @@
 TYPE_OF_ANALYSIS = (
-    ('1', 'Fill everywhere'), 
-    ('2', 'Fill the outlet'),
+    ('Fill everywhere', 'Fill everywhere'), 
+    ('Fill the outlet', 'Fill the outlet'),
 )
 
 TYPE_OF_BC = (
-    ('Pressure', 'Pressure'), 
-    ('Flow_Rate', 'Flow Rate'),
+    ('Inlet', 'Inlet'), 
+    ('Outlet', 'Outlet'),
     ('Wall',  'Wall')
 )
+
+CONDITION_OF_BC = (
+    ('Pressure', 'Pressure'), 
+    ('Flow rate', 'Flow rate'),
+    ('None', 'None')
+)
+
+BINARY_CHOICES=[
+    ('yes','Yes'),         
+    ('no','No')
+]

@@ -246,9 +246,9 @@ def resin_page(request, slug):
     if request.method == 'POST':
         form = NewResinForm(request.POST, initial={'name':"Resin_1"})
         if form.is_valid():
-            resin = form.save(commit=False)
-            resin.analysis = analysis
-            resin.save()
+            resin = form.cleaned_data
+            resin['analysis_id'] = analysis.id
+            Resin.objects.update_or_create(resin, analysis=analysis)
             return redirect('preform', slug=analysis.name)
     else:
         form = NewResinForm(initial={'name':"Resin_1"})
@@ -295,10 +295,9 @@ def step_page(request, slug):
     if request.method == 'POST':
         form = NewStepForm(request.POST, initial={'name':"Step_1"})
         if form.is_valid():
-            step = form.save(commit=False)
-            step.analysis = analysis
-            step.save()
-
+            step = form.cleaned_data
+            step['analysis_id'] = analysis.id
+            Step.objects.update_or_create(step, analysis=analysis)
             return redirect('submit', slug=analysis.name)
     else:
         form = NewStepForm(initial={'name':"Step_1"})
@@ -327,6 +326,7 @@ def bc_page(request, slug):
                     UpdateBC=BC.objects.get(id=Update_key)
                     UpdateBC.value = bc.value
                     UpdateBC.typ = bc.typ
+                    UpdateBC.condition = bc.condition
                     UpdateBC.save()
                 else:
                     bc.save( )
@@ -348,11 +348,7 @@ def submit_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     if request.method == 'POST':
         form = JobSubmitForm(request.POST)
-        try:        
-            Results.objects.create(analysis=analysis)
-        except:
-            pass
-#        subprocess.call("python3 /mnt/c/Users/shayanfa/Desktop/ASC_Challenge/ASC_Project/analyses/solver/Darcy_CVFEM.py", shell=True)
+        Results.objects.update_or_create(analysis=analysis)
         solve_darcy(analysis)
         return redirect('result', slug=analysis.name)
     else:

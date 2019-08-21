@@ -32,7 +32,7 @@ def solve_darcy(_analysis):
         preform = preforms
         H[section.name] = H[section.name] + preform.thickness
         phi[section.name] = phi[section.name] + preform.phi*preform.thickness
-        k = T * np.array([[preform.K11, preform.K12], [preform.K12, preform.K12]])
+        k = T * np.array([[preform.K11, preform.K12], [preform.K12, preform.K22]])
         KXX[section.name] = KXX[section.name] + preform.thickness * k[0][0]
         KXY[section.name] = KXY[section.name] + preform.thickness * k[0][1]
         KYY[section.name] = KYY[section.name] + preform.thickness * k[1][1]
@@ -41,15 +41,6 @@ def solve_darcy(_analysis):
         KYY[section.name] = KYY[section.name]/H[section.name]
         phi[section.name] = phi[section.name]/H[section.name]
 
-## rotation is not used
-
-    EdgeList = {}
-
-    for items in Nodes.objects.filter(mesh_id=_analysis.mesh).values():
-        if items['EdgeGroup'] not in EdgeList.keys():
-            EdgeList[items['EdgeGroup']] = []
-        EdgeList[items['EdgeGroup']].append(items['NodeNum'])
-    del EdgeList["_None"]
 
     analysis = {
         'analysis_id':_analysis.id,
@@ -75,6 +66,7 @@ def solve_darcy(_analysis):
     step = _analysis.step
 
     step_data = {
+        'termination_type':step.typ,
         'termination_time':step.endtime,
         'output_steps':step.outputstep,
         'maximum_itrations':step.maxiterations,
@@ -84,19 +76,50 @@ def solve_darcy(_analysis):
         'filling_threshold':step.fillthreshold,
     }
 
+    EdgeList = {}
+
+    for items in Nodes.objects.filter(mesh_id=_analysis.mesh).values():
+        if items['EdgeGroup'] not in EdgeList.keys():
+            EdgeList[items['EdgeGroup']] = []
+        EdgeList[items['EdgeGroup']].append(items['NodeNum'])
+    del EdgeList["_None"]
+
+    Inlets = {}
+    Outlets = {}
+    Walls = {}
+    boundary_marker = 1
+    for item in BC.objects.filter(analysis_id=_analysis.id):
+        if item.typ == 'Inlet':
+            Inlets[item.name] = {
+                'marker':boundary_marker,
+                'condition':item.condition,
+                'value':item.value,
+                'nodes':EdgeList[item.name],
+            }
+            boundary_marker += 1
+
+        elif item.typ == 'Outlet':
+            Outlets[item.name] = {
+                'marker':boundary_marker,
+                'condition':'Pressure',
+                'value':item.value,
+                'nodes':EdgeList[item.name],
+            }
+            boundary_marker += 1
+            
+        else:
+            Walls[item.name] = {
+                'marker':boundary_marker,
+                'condition':'None',
+                'value':0.0,
+                'nodes':EdgeList[item.name],
+            }
+            boundary_marker += 1
+
     BCs = {
-        'inlets':{
-            'P_inlet':100000
-        },
-        'outlets':{
-            'P_outlet':0
-        },
-        'edges':{
-            'Inlet':EdgeList['Inlet'],
-            'Outlet':EdgeList['Outlet'],
-            'wall1':EdgeList['wall1'],
-            'wall2':EdgeList['wall2'],
-        }
+        'inlets':Inlets,
+        'outlets':Outlets,
+        'walls':Walls,
     }
 
     InputData = {
@@ -111,4 +134,4 @@ def solve_darcy(_analysis):
     }
 
     problem=Darcy_CVFEM(InputData)
-    problem.solve() 
+    problem.solve()
