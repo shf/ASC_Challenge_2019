@@ -111,6 +111,8 @@ class MeshImport():
             del _groups[key]
         for key, value in _Faces.items():
             _Faces[key]=list(map(int, value))
+        if len(_Faces)==0:
+            _Faces['AllDomain']=list(map(int, self._Nodes))
         for key, value in _groups.items():
             _groups[key]=list(map(int, value))
         return _groups, _Faces

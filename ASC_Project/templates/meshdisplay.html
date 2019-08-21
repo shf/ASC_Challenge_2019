@@ -1,39 +1,71 @@
 {% extends 'BaseSidebar.html' %}
 
 {% block title %}
-  {{ analysis.name }} - {{ block.super }}
+{{ analysis.name }} - {{ block.super }}
 {% endblock %}
 
 {% block Analysis %}
-  {{ analysis.name }}
+{{ analysis.name }}
 {% endblock %}
 
 
 {% block PageName %}
-  Mesh
+Mesh
 {% endblock %}
 
 {% block content %}
 
 {% if graph %}
-<div >
-{{ graph|safe }}
+<div>
+  {{ graph|safe }}
 </div>
 {% endif %}
+<div class="row">
+  <div class="col-3">
+    <table class="table table-striped">
+      <thead class="thead-inverse">
+        <tr>
+          <th>Edges</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in Edges %}
+        {% if r.EdgeGroup != "_None" %}
+        <tr>
+          <td>{{r.EdgeGroup}}</td>
+        </tr>
+        {% endif %}
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="col-3">
+    <table class="table table-striped">
+      <thead class="thead-inverse">
+        <tr>
+          <th>Faces</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in Faces %}
+        <tr>
+          <td>{{r.FaceGroup}}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="col-1">
+  </div>
+  <div class="col-4">
+    <form method="post" validate>
 
-<div>
-  <form method="post" enctype="multipart/form-data">
-  
-    {% csrf_token %}  
-    {{ form.as_p }}
-    <!-- {% include 'includes/form.html' %} -->
-  
-    <button type="submit" class="btn btn-success">Submit</button>
-  </form>
-  <br>
-  <br>
+      {% csrf_token %}
+      {{ form.as_p }}
+      <!-- {% include 'includes/form.html' %} -->
 
+      <button type="submit" class="btn btn-success">Submit</button>
+    </form>
+  </div>
 </div>
-
-
 {% endblock %}
