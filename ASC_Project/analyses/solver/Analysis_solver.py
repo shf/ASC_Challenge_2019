@@ -1,15 +1,24 @@
+from __future__ import absolute_import, unicode_literals      
 from .Darcy_CVFEM import Darcy_CVFEM
 from ..models import (BC, Analysis, Connectivity, Mesh, Nodes, Preform, Resin,
                      Section, Step, Results)
-                
+from time import sleep          
 import numpy as np
+from celery import shared_task
 
-def solve_darcy(_analysis):
+@shared_task (bind=True)
+def solve_darcy(self,_id):
     '''
     This function creates an instance for the Darcy_FEM solver class
     based on the database information 
     '''
-
+    for i in range(100):
+        sleep(0.1)
+        self.update_state(state='PROGRESS',  meta={'current': i, 'total': 100, 'percent':i/100})
+        print(i)
+    self.update_state(state='COMPLETE',  meta={'current': i, 'total': 100, 'percent':i/100})
+    '''
+    _analysis = Analysis.objects.get(id=_id)
     resin = _analysis.resin
     viscosity = resin.viscosity
 
@@ -111,4 +120,4 @@ def solve_darcy(_analysis):
     }
 
     problem=Darcy_CVFEM(InputData)
-    problem.solve() 
+    problem.solve() '''

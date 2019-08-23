@@ -168,3 +168,32 @@ make sure you replace `{$MainDirectory}` to main directory.
 - `sudo a2ensite 001-pvw.conf`
 - `sudo a2dissite 000-default.conf`
 - `sudo service apache2 restart`
+
+
+# Celery Manual
+version:4.3
+https://docs.celeryproject.org/en/latest/django/first-steps-with-django.html
+https://github.com/celery/celery/tree/master/examples/django
+
+requirements:
+
+`pip install django-celery-results`
+## In a production environment you’ll want to run the worker in the background as a daemon - see Daemonization 
+
+#Redis : message broker:
+https://docs.celeryproject.org/en/latest/getting-started/brokers/redis.html#broker-redis
+
+`sudo apt-get install redis-server`
+`sudo service redis-server start`   \\\ sudo service redis-server  {start|stop|restart|force-reload|status}
+
+`pip install -U "celery[redis]"`
+
+run the server: `celery -A ASC_Project worker -l info`
+
+https://stackoverflow.com/questions/38267525/how-to-make-celery-worker-return-results-from-task
+
+# Monitoring tasks:
+supervisor version: 3.3.1
+
+`sudo apt-get install supervisor`
+https://pinoylearnpython.com/django-celery-with-real-time-monitoring-tasks-using-flower/

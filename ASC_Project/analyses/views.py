@@ -3,6 +3,10 @@ import subprocess
 
 import plotly.graph_objs as go
 import plotly.offline as opy
+import celery
+
+from celery.result import AsyncResult
+
 from django.conf import settings
 from django.contrib import messages
 from django.core.files.storage import FileSystemStorage
@@ -12,7 +16,7 @@ from django.template.defaulttags import register
 
 from .forms import (JobSubmitForm, MeshConfirmationForm, NewAnalysisForm,
                     NewBCForm, NewMeshForm, NewPreformForm, NewResinForm,
-                    NewSectionForm, NewStepForm, ResultsForm)
+                    NewSectionForm, NewStepForm, ResultsForm, StatusForm)
 from .models import (BC, Analysis, Connectivity, Mesh, Nodes, Preform, Resin,
                      Results, Section, Step)
 from .solver.Analysis_solver import solve_darcy
@@ -373,19 +377,41 @@ def step_page(request, slug):
     Page = SideBarPage().DicUpdate("step")
     return render(request, 'step.html', PageVariables(Page, form, analysis))
 
-
 def submit_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     if request.method == 'POST':
         form = JobSubmitForm(request.POST)
+        solver=solve_darcy.delay(analysis.id)
         Results.objects.update_or_create(analysis=analysis)
-        solve_darcy(analysis)
-        return redirect('result', slug=analysis.name)
+        Results.objects.filter(analysis=analysis).update(processID=solver.id)    
+        return redirect('status', slug=analysis.name)
     else:
         form = JobSubmitForm()
     Page = SideBarPage().DicUpdate("submit")
     return render(request, 'submit.html', PageVariables(Page, form, analysis))
 
+from celery import current_app
+import json
+
+def get_progress(request, slug):
+    analysis = get_object_or_404(Analysis, name=slug)
+    task_id=analysis.results.processID
+    result = AsyncResult(task_id)
+    response_data = {
+        'state': result.state,
+        'details': result.info,
+    }
+    return HttpResponse(json.dumps(response_data), content_type='ASC_Project/json')
+
+def status_page(request, slug):
+    analysis = get_object_or_404(Analysis, name=slug)
+    if request.method == 'POST':
+        form = StatusForm(request.POST) 
+        return redirect('result', slug=analysis.name)
+    else:
+        form = StatusForm()
+    Page = SideBarPage().DicUpdate("submit")
+    return render(request, 'status.html', PageVariables(Page, form, analysis))
 
 def result_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)

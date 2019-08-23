@@ -106,6 +106,6 @@ class BC(models.Model):
         return self.name
 
 class Results(models.Model):
-    Step=models.IntegerField(default=0)
-    processID=models.IntegerField(default=0)
+    
+    processID=models.CharField(default=0,max_length=30)
     analysis = models.OneToOneField(Analysis, related_name='results', on_delete=models.CASCADE)

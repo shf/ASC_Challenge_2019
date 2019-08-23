@@ -1,10 +1,14 @@
+from __future__ import absolute_import, unicode_literals
+
+import copy
+import logging
+import os
+import sys
+import time
+
 import fenics as fe
 import numpy as np
-import time
-import logging
-import copy
-import sys
-import os
+
 
 __all__ = ['Darcy_CVFEM']
 
@@ -227,7 +231,6 @@ class Darcy_CVFEM():
 
         self._message_file.write("IC BC Initialized. \n")
     ################## INITIALIZE DOMAIN AND TIME-STEP ##################################
-
     def solve(self):
 
         mesh = self._mesh

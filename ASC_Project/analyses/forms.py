@@ -101,5 +101,8 @@ class NewBCForm(forms.ModelForm):
 class JobSubmitForm(forms.Form):
     btn = forms.CharField(label='', widget=forms.HiddenInput())
 
+class StatusForm(forms.Form):
+    btn = forms.CharField(label='', widget=forms.HiddenInput())
+    
 class ResultsForm(forms.Form):
     btn = forms.CharField(label='', widget=forms.HiddenInput())
