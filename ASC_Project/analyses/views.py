@@ -265,9 +265,9 @@ def resin_page(request, slug):
     if request.method == 'POST':
         form = NewResinForm(request.POST, initial={'name': "Resin_1"})
         if form.is_valid():
-            resin = form.save(commit=False)
-            resin.analysis = analysis
-            resin.save()
+            resin = form.cleaned_data
+            resin['analysis_id'] = analysis.id
+            Resin.objects.update_or_create(resin, analysis=analysis)
             return redirect('preform', slug=analysis.name)
     else:
         form = NewResinForm(initial={'name': "Resin_1"})
@@ -322,6 +322,21 @@ def section_page(request, slug):
     return render(request, 'section.html', PageVariables(Page, form, analysis))
 
 
+def step_page(request, slug):
+    analysis = get_object_or_404(Analysis, name=slug)
+    if request.method == 'POST':
+        form = NewStepForm(request.POST, initial={'name':"Step_1"})
+        if form.is_valid():
+            step = form.cleaned_data
+            step['analysis_id'] = analysis.id
+            Step.objects.update_or_create(step, analysis=analysis)
+            return redirect('submit', slug=analysis.name)
+    else:
+        form = NewStepForm(initial={'name':"Step_1"})
+    Page = SideBarPage().DicUpdate("step")
+    return render(request,'step.html', PageVariables(Page,form,analysis))
+
+
 def bc_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     if request.method == 'POST':
@@ -344,6 +359,7 @@ def bc_page(request, slug):
                     UpdateBC = BC.objects.get(id=Update_key)
                     UpdateBC.value = bc.value
                     UpdateBC.typ = bc.typ
+                    UpdateBC.condition = bc.condition
                     UpdateBC.save()
                 else:
                     bc.save()
@@ -360,6 +376,7 @@ def bc_page(request, slug):
         form = NewBCForm(mesh=analysis.mesh)
     Page = SideBarPage().DicUpdate("bc")
     return render(request, 'bc.html', PageVariables(Page, form, analysis))
+
 
 
 def step_page(request, slug):

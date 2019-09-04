@@ -1,13 +1,15 @@
 from __future__ import absolute_import, unicode_literals
 
+import fenics as fe
+import numpy as np
+import time
+import logging
 import copy
 import logging
 import os
 import sys
 import time
 
-import fenics as fe
-import numpy as np
 
 
 __all__ = ['Darcy_CVFEM']
@@ -32,20 +34,19 @@ class Darcy_CVFEM():
 #        _sec = input['sections']
         _inlets = input['BCs']['inlets']
         _outlets = input['BCs']['outlets']
-        _edges = input['BCs']['edges']
-#        _walls = input['BCs']['Walls']
+        _walls = input['BCs']['walls']
 #        _Loads = input['loads']
         _step = input['step']
         
         self._logging(_data_handling)
         self._create_output_files(_data_handling)
+        self._mesh_initialization(_data_handling)
         self._define_resin(_resin)
         self._define_sections(_sections)
-        self._mesh_initialization(_data_handling)
         self._define_function_space(self._mesh)
-#        self._define_functions(_ICs)
         self._define_step(_step)
-        self._define_BCs(_inlets, _outlets, _edges)
+        self._define_BCs(_inlets, _outlets, _walls)
+        self._define_initial_conditions()
 #        self._define_loads(_Loads)
 #        self.SolverConfig(_steps, _output)
         return None
@@ -72,6 +73,7 @@ class Darcy_CVFEM():
 
         self._domainfile = fe.File(_data_handling['folder_address'] + "/results/domains.pvd")
         self._boundaryfile = fe.File(_data_handling['folder_address'] + "/results/boundaries.pvd")
+        self._materialfile = fe.File(_data_handling['folder_address'] + "/results/materials.pvd")
         self._flowfrontfile = fe.File(_data_handling['folder_address'] + "/results/flowfrontvstime.pvd")
 
         self._message_file.write("File handlers created Successfully.\n")
@@ -83,20 +85,61 @@ class Darcy_CVFEM():
 
     def _define_sections(self, _sections):
 
+        self._materials = fe.MeshFunction('size_t', self._mesh, self._mesh.topology().dim())
+        self._materials.set_all(1) # correct this
+
         self._k_exp = {}
-        self._h = {}
-        self._phi = {}
+        self._h = np.zeros(self._num_nodes)
+        self._phi = np.zeros(self._num_nodes)
         self._message_file.write("Creating Sections ... \n")
-        for section_id in _sections.keys():
-            self._k_exp[section_id] = fe.as_matrix(((_sections[section_id]['K11'], _sections[section_id]['K12'])
-            , (_sections[section_id]['K12'], _sections[section_id]['K22'])))
-            self._h[section_id] = _sections[section_id]['thickness']
-            self._phi[section_id] = _sections[section_id]['volume_fraction']
+
+        for i in _sections:
+            section_id = _sections[i]['marker']
+            self._k_exp[section_id] = fe.as_matrix([[_sections[i]['K11'], _sections[i]['K12']], 
+            [_sections[i]['K12'], _sections[i]['K22']]])
+            self._message_file.write("Section name: " + i + "\n")
             self._message_file.write("Section number: " + str(section_id) + "\n")
             self._message_file.write("Section permeability: " + str(self._k_exp[section_id]) + "\n")
-            self._message_file.write("Section thickness: " + str(self._h[section_id]) + "\n")
-            self._message_file.write("Section volume fraction: " + str(self._phi[section_id]) + "\n")
+            self._message_file.write("Section thickness: " + str(_sections[i]['thickness']) + "\n")
+            self._message_file.write("Section volume fraction: " + str(_sections[i]['volume_fraction']) + "\n")
 
+            for node in _sections[i]['nodes']:
+                self._h[node] = _sections[i]['thickness']
+                self._phi[node] = _sections[i]['volume_fraction']
+
+                ver=fe.Vertex(self._mesh,node)
+                for cell in fe.cells(ver):
+                    entity=cell.entities(0)
+                    if all(item in _sections[i]['nodes'] for item in entity):
+                        self._materials[cell.index()] = _sections[i]['marker'] 
+
+        class s_boundary(fe.UserExpression):
+            def eval(self, values, x):
+                    values[0] = 1.0
+                    values[1] = 2.0
+            def value_shape(self):
+                return (2,)
+
+        self._k = s_boundary()
+        print(self._k)
+
+        # class Permeability(fe.UserExpression):
+        #     def __init__(self, materials, k, **kwargs):
+        #         self.__materials = materials
+        #         self.__k = k
+        #         super().__init__(**kwargs)
+            
+        #     def eval_cell(self, values, x, ufc_cell):
+        #         values[0] = 1.0
+        #         values[1] = 2.0 
+
+        #     def value_shape(self):
+        #         return (2,)
+
+#       self._k = Permeability(self._materials, self._k_exp, degree=0)
+        #print('here')
+        #self._domainfile << (self._k, 0)
+        #print('here2')
         self._message_file.write("Section material created successfully. \n")
 
     def _mesh_initialization(self, _data_handling):
@@ -107,19 +150,13 @@ class Darcy_CVFEM():
         '''
         # Create mesh
         self._message_file.write("\nMESH PRE-PROCESSING \n")
-        self._message_file.write("Creating mesh in FEniCS... \n")
+        self._message_file.write("Creating mesh in FEniCS for analysis" + str(_data_handling['analysis_id']) + "... \n")
 
         self._mesh = fe.Mesh(_data_handling['folder_address'] + "/mesh.xml")
         self._mesh.rename("Current_mesh", "")
 
         self._coords = self._mesh.coordinates() # coordination of vertices
         self._num_nodes = self._mesh.num_vertices() # number of vertices
-
-        self._cell_voll = np.zeros(self._num_nodes) # Volume of CV cells
-
-        for i in range(len(self._cell_voll)):
-            for shared_cell in fe.cells(fe.MeshEntity(self._mesh, self._mesh.topology().dim()-2, i)):
-                self._cell_voll[i] = self._cell_voll[i] + (shared_cell.volume()/3.0)*self._h[0]*self._phi[0]
 
         # Create the markers
         self._BoundaryEdges = fe.BoundaryMesh(self._mesh, 'exterior').entity_map(1).array()
@@ -177,7 +214,8 @@ class Darcy_CVFEM():
 
         self._message_file.write("Time-step size asserted successfully.\n")
 
-#        self._termination_type = {0:"time-limit", 1:"fill-all", 2:"fill-outlet"}
+        self._termination_type = _step['termination_type']
+        self._termination_para = 0
         self._TEND = _step['termination_time'] # end time - for halting analysis
         self._max_nofiteration = _step['maximum_itrations'] # maximum number of iterations for pressure
         self._Number_consecutive_steps = _step['maximum_consequtive_steps'] # number of consecutive steps without change in S
@@ -189,47 +227,74 @@ class Darcy_CVFEM():
 
         self._message_file.write("Termination parameters asserted successfully.\n")
     
-    def _define_BCs(self, _inlets, _outlets, _edges):
+    def _define_BCs(self, _inlets, _outlets, _walls):
         '''
         define source functions, boundary conditions and initial conditions
         '''
-
-        # Define source function
-        self._body_force = fe.Constant(0) # body force
-        self._wall_condition = fe.Constant(0) # pressure difference perpendicular to walls
+        self._inlets = _inlets
+        self._outlets = _outlets
+        self._walls = _walls
 
         # Define inlet and outlet
-        self._p_inlet_exp = fe.Constant(_inlets['P_inlet'])
-        self._p_outlet_exp = fe.Constant(_outlets['P_outlet'])
+        self._vertices_inlet = []
+        self._vertices_outlet = []
+        self._pressure_inlet_dicts = []
+        self._velocity_inlet_dicts = []
+        self._pressure_outlet_dicts = []
 
-        self._vertices_inlet = _edges['Inlet'] + _edges['wall1']
-        self._vertices_outlet = _edges['Outlet']
-        self._vertices_Wall = _edges['wall2']
+        for i in self._inlets:
+            self._vertices_inlet += self._inlets[i]['nodes'][:]
 
-        for node in self._vertices_Wall:
-            ver=fe.Vertex(self._mesh,node)
-            for edge in fe.edges(ver):
-                if edge.index() in self._BoundaryEdges:
-                    self._boundaries[edge.index()]=3
+        for i in self._outlets:
+            self._vertices_outlet += self._outlets[i]['nodes'][:]
 
-        for node in self._vertices_inlet:
-            ver=fe.Vertex(self._mesh,node)
-            for edge in fe.edges(ver):
-                if edge.index() in self._BoundaryEdges:
-                    self._boundaries[edge.index()]=1
+        for i in self._walls:
+            for node in self._walls[i]['nodes']:
+                ver=fe.Vertex(self._mesh,node)
+                for edge in fe.edges(ver):
+                    if edge.index() in self._BoundaryEdges:
+                        self._boundaries[edge.index()]=self._walls[i]['marker']
+
+        for i in self._inlets:
+            for node in self._inlets[i]['nodes']:
+                ver=fe.Vertex(self._mesh,node)
+                for edge in fe.edges(ver):
+                    if edge.index() in self._BoundaryEdges:
+                        self._boundaries[edge.index()]=self._inlets[i]['marker']
+            if self._inlets[i]['condition'] == 'Pressure':
+                self._pressure_inlet_dicts.append(i)
+            else:
+                self._velocity_inlet_dicts.append(i)
                         
-        for node in self._vertices_outlet:
-            ver=fe.Vertex(self._mesh,node)
-            for edge in fe.edges(ver):
-                if edge.index() in self._BoundaryEdges:
-                    self._boundaries[edge.index()]=4
+        for i in self._outlets:
+            for node in self._outlets[i]['nodes']:
+                ver=fe.Vertex(self._mesh,node)
+                for edge in fe.edges(ver):
+                    if edge.index() in self._BoundaryEdges:
+                        self._boundaries[edge.index()]=self._outlets[i]['marker']
+            if self._outlets[i]['condition'] == 'Pressure':
+                self._pressure_outlet_dicts.append(i)
 
+    def _define_initial_conditions(self):
+        '''
+        define initial conditions and source terms
+        '''
         # Set the saturation at the inlet equal to one
         for i in self._vertices_inlet:
             self._saturation[i] = 1.0
             self._FFvsTime[i] = 0.0
 
-        self._message_file.write("IC BC Initialized. \n")
+        # Define source function
+        self._body_force = fe.Constant(0.0) # body force
+        self._wall_condition = fe.Constant(0.0) # pressure difference perpendicular to walls
+
+        self._cell_voll = np.zeros(self._num_nodes) # Volume of CV cells
+
+        for i in range(len(self._cell_voll)):
+            for shared_cell in fe.cells(fe.MeshEntity(self._mesh, self._mesh.topology().dim()-2, i)):
+                self._cell_voll[i] = self._cell_voll[i] + (shared_cell.volume()/3.0)*self._h[i]*self._phi[i]
+
+        self._message_file.write("Initial conditions applied. \n")
     ################## INITIALIZE DOMAIN AND TIME-STEP ##################################
     def solve(self):
 
@@ -244,9 +309,8 @@ class Darcy_CVFEM():
 
         domains = self._domains
         boundaries = self._boundaries
+        materials = self._materials
         vertices = self._vertices
-        p_inlet_exp = self._p_inlet_exp
-        p_outlet_exp = self._p_outlet_exp
         ZZ = self._ZZ
         XX = self._XX
         QQ = self._QQ
@@ -256,17 +320,20 @@ class Darcy_CVFEM():
         delta_S = self._delta_saturation
         V = self._vel
         FFvsTime = self._FFvsTime
+        k_exp = self._k
+        print('here')
+        v_test = fe.interpolate(k_exp, XX)
         
-        k_exp = self._k_exp[0]
+        self._boundaryfile << (v_test, 0)
+
+"""        
         mu_exp = self._mu_exp
-        h = self._h[0]
-        phi = self._phi[0]
+        h = self._h
         g = self._body_force
         w = self._wall_condition
 
         vertices_inlet = self._vertices_inlet
         vertices_outlet = self._vertices_outlet
-        vertices_Wall = self._vertices_Wall
 
         BoundaryEdges = self._BoundaryEdges
         BoundaryNodes = self._BoundaryNodes
@@ -291,23 +358,25 @@ class Darcy_CVFEM():
                 for vertice in fe.vertices(c):
                     if vertice.index() not in available_nodes:
                         nodes_on_flow_front.add(vertice.global_index())
-                        vertices[vertice] = 2
+                        vertices[vertice] = 99
 
         for i in available_cells:
             for e in fe.facets(fe.MeshEntity(mesh, mesh.topology().dim(), i)):
                     if e.entities(0)[0] in nodes_on_flow_front and e.entities(0)[1] in nodes_on_flow_front:
                         facet_on_flow_front.add(e.global_index())
-                        boundaries[e] = 2
+                        if boundaries[e] == 0:
+                            boundaries[e] = 99
 
-        # boundary condition for gate
-        
-        bc1 = fe.DirichletBC(ZZ, p_inlet_exp, boundaries, 1)
+        # boundary conditions for pressure
+        bcs = []
+        for i in self._pressure_inlet_dicts:
+            bcs.append(fe.DirichletBC(ZZ, self._inlets[i]['value'], boundaries, self._inlets[i]['marker']))
+
+        for i in self._pressure_outlet_dicts:
+            bcs.append(fe.DirichletBC(ZZ, self._outlets[i]['value'], boundaries, self._outlets[i]['marker']))
 
         # boundary condition for flow-front
-        bc2 = fe.DirichletBC(ZZ, p_outlet_exp, boundaries, 2)
-
-        # boundary condition for outlet
-        bc3 = fe.DirichletBC(ZZ, p_outlet_exp, boundaries, 4)
+        bc_flowfront = [fe.DirichletBC(ZZ, 0.0, boundaries, 99)] # should be discussed!!!!
 
         # a) set BC and Domain in each step
         # Domain
@@ -317,10 +386,17 @@ class Darcy_CVFEM():
         self._message_file.write("Domains constructed. \n")
 
         # b) variational problem and computing pressure
+        normal_terms = []
+        for i in self._velocity_inlet_dicts:
+            normal_terms.append(self._inlets[i]['value']*q*ds_wall(self._inlets[i]['marker']))
+        
+        for i in self._walls:
+            normal_terms.append(w*q*ds_wall(self._walls[i]['marker']))
+
         a = fe.inner(k_exp/mu_exp*fe.grad(p), fe.grad(q))*dx_domain(1) + p*q*dx_domain(0)
-        L = g*q*dx_domain(1) + w*q*ds_wall(3) + g*q*dx_domain(0)
+        L = g*q*dx_domain(1) + sum(term for term in normal_terms) + g*q*dx_domain(0)
         ph = fe.Function(ZZ)
-        fe.solve(a == L, ph, [bc1, bc2, bc3])
+        fe.solve(a == L, ph, bcs + bc_flowfront)
         ph.rename("Pressure", "")
 
         # b) postprocess velocity
@@ -367,7 +443,7 @@ class Darcy_CVFEM():
                                     normal = [cell_midpoint[1] - edge_midpoint[1], -(cell_midpoint[0] - edge_midpoint[0])]/norm
 
                                 vel = (V[v_i] + V[v_j])/2.0
-                                flux = np.dot(vel, normal)*norm*h
+                                flux = np.dot(vel, normal)*norm*h[v_i]
                                 dt = min(dt, (1 - S[v_i])*(cell_voll[v_i])/abs(flux))
 
         dt = self._t_scaling*dt
@@ -397,7 +473,7 @@ class Darcy_CVFEM():
                                         normal = [cell_midpoint[1] - edge_midpoint[1], -(cell_midpoint[0] - edge_midpoint[0])]/norm
 
                                     vel = (V[v_i] + V[v_j])/2.0
-                                    flux = np.dot(vel, normal)*norm*h
+                                    flux = np.dot(vel, normal)*norm*h[v_i]
                                     delta_S[v_i] = delta_S[v_i] + dt*(abs(flux))/(cell_voll[v_i])
 
             # Finding dt to fill just one control volueme
@@ -412,7 +488,7 @@ class Darcy_CVFEM():
             elif max_s == 1:
                 for i in range(num_nodes):
                     if delta_S[i] != 0 and S[i] + delta_S[i] < 1.0:
-                        dt_new = max(dt_new, (dt*(1.0 - S[i])/(delta_S[i])))
+                        dt_new = min(dt_new, (dt*(1.0 - S[i])/(delta_S[i])))
             else:
                 raise
 
@@ -466,32 +542,38 @@ class Darcy_CVFEM():
                 for vertice in fe.vertices(fe.MeshEntity(mesh, mesh.topology().dim(), c)):
                     if vertice.index() not in available_nodes:
                         nodes_on_flow_front.add(vertice.global_index())
-                        vertices[vertice] = 2
+                        vertices[vertice] = 99
 
             if available_nodes_old != available_nodes:
                 for i in available_nodes - available_nodes_old:
                     FFvsTime[i] = t
 
-            if unfilled_nodes == set():
-                self._message_file.write('All CVs are filled! \n')
+            if unfilled_nodes == set() and self._termination_type == 'Fill everywhere':
+                self._message_file.write('\nAll CVs are filled! \n')
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
                 self._flowfrontfile << ffvstimeh
                 break
             elif numerator == self._max_nofiteration:
-                self._message_file.write('Maximum iteration number ' + str(self._max_nofiteration) + ' is reached! \n')
+                self._message_file.write('\nMaximum iteration number ' + str(self._max_nofiteration) + ' is reached! \n')
+                for i in range(len(FFvsTime)):
+                    ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
+                self._flowfrontfile << ffvstimeh
+                break
+            elif t > TEND:
+                self._message_file.write('\nMaximum filling time is reached! \n')
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
                 self._flowfrontfile << ffvstimeh
                 break
             elif self._termination_para > self._Number_consecutive_steps:
-                self._message_file.write('Saturation halted for ' + str(self._termination_para) + ' iterations! \n')
+                self._message_file.write('\nSaturation halted for ' + str(self._termination_para) + ' iterations! \n')
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
                 self._flowfrontfile << ffvstimeh
                 break
-            elif self._Outlet_filled == True and True == False:
-                self._message_file.write('All outlet nodes are filled! \n')
+            elif self._Outlet_filled == True and self._termination_type == 'Fill the outlet':
+                self._message_file.write('\nAll outlet nodes are filled! \n')
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
                 self._flowfrontfile << ffvstimeh
@@ -499,31 +581,15 @@ class Darcy_CVFEM():
 
             facet_on_flow_front = set()
 
-            # Sub domain for walls
-        #        wall.mark(boundaries, 3)
-            for node in vertices_Wall:
-                ver=fe.Vertex(mesh,node)
-                for edge in fe.edges(ver):
-                    if edge.index() in BoundaryEdges:
-                        boundaries[edge.index()]=3
+            self._define_BCs(self._inlets, self._outlets, self._walls)
+            boundaries = self._boundaries
 
             for i in available_cells:
                 for e in fe.facets(fe.MeshEntity(mesh, mesh.topology().dim(), i)):
                     if e.entities(0)[0] in nodes_on_flow_front and e.entities(0)[1] in nodes_on_flow_front:
                         facet_on_flow_front.add(e.global_index())
-                        boundaries[e] = 2
-
-            for node in vertices_inlet:
-                ver=fe.Vertex(mesh,node)
-                for edge in fe.edges(ver):
-                    if edge.index() in BoundaryEdges:
-                        boundaries[edge.index()]=1
-                            
-            for node in vertices_outlet:
-                ver=fe.Vertex(mesh,node)
-                for edge in fe.edges(ver):
-                    if edge.index() in BoundaryEdges:
-                        boundaries[edge.index()]=4
+                        if boundaries[e] == 0:
+                            boundaries[e] = 99
 
         #   Check if the domain is change to solve for pressure
             if available_cells_old != available_cells:
@@ -532,13 +598,15 @@ class Darcy_CVFEM():
                 self._message_file.write('\nStep: ' + str(numerator) + ', time:' + str(t) + '\n')
 
                 # boundary condition for gate
-                bc1 = fe.DirichletBC(ZZ, p_inlet_exp, boundaries, 1)
+                bcs = []
+                for i in self._pressure_inlet_dicts:
+                    bcs.append(fe.DirichletBC(ZZ, self._inlets[i]['value'], boundaries, self._inlets[i]['marker']))
+
+                for i in self._pressure_outlet_dicts:
+                    bcs.append(fe.DirichletBC(ZZ, self._outlets[i]['value'], boundaries, self._outlets[i]['marker']))
 
                 # boundary condition for flow front
-                bc2 = fe.DirichletBC(ZZ, p_outlet_exp, boundaries, 2)
-
-                # boundary condition for outlet
-                bc3 = fe.DirichletBC(ZZ, p_outlet_exp, boundaries, 4)
+                bc_flowfront = [fe.DirichletBC(ZZ, 0.0, boundaries, 99)] #DISCUSS!
 
                 # set BC and Domain in each step
                 # Domain
@@ -546,12 +614,19 @@ class Darcy_CVFEM():
                 ds_wall = fe.Measure("ds")(subdomain_data=boundaries)
 
                 # variational problem and computing pressure
+                normal_terms = []
+                for i in self._velocity_inlet_dicts:
+                    normal_terms.append(self._inlets[i]['value']*q*ds_wall(self._inlets[i]['marker']))
+                
+                for i in self._walls:
+                    normal_terms.append(w*q*ds_wall(self._walls[i]['marker']))
+                
                 a = fe.inner(k_exp/mu_exp*fe.grad(p), fe.grad(q))*dx_domain(1) + p*q*dx_domain(0)
-                L = g*q*dx_domain(1) + w*q*ds_wall(3) + g*q*dx_domain(0)
+                L = g*q*dx_domain(1) + sum(term for term in normal_terms) + g*q*dx_domain(0)
 
                 ph = fe.Function(ZZ)
 
-                fe.solve(a == L, ph, [bc1, bc2, bc3])
+                fe.solve(a == L, ph, bcs + bc_flowfront)
                 ph.rename("Pressure", "")
 
                 # postprocess velocity
@@ -565,11 +640,13 @@ class Darcy_CVFEM():
 
             # plot solution and write output file
             if t > self._current_output_step:
-        #        file_results.write(ph, t)
-        #        file_results.write(uh, t)
+                self._resultsfile.write(ph, t)
+                self._resultsfile.write(uh, t)
                 self._resultsfile.write(sh, t)
 
                 self._current_output_step = self._output_steps + t
 
                 self._domainfile << (domains, t)
                 self._boundaryfile << (boundaries, t)
+
+                self._materialfile << (materials, t)
