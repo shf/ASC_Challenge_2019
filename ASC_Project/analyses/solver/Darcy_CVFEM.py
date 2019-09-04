@@ -1,13 +1,16 @@
-# for each node have an h
-# for each node have a phi
+from __future__ import absolute_import, unicode_literals
 
 import fenics as fe
 import numpy as np
 import time
 import logging
 import copy
-import sys
+import logging
 import os
+import sys
+import time
+
+
 
 __all__ = ['Darcy_CVFEM']
 
@@ -293,7 +296,6 @@ class Darcy_CVFEM():
 
         self._message_file.write("Initial conditions applied. \n")
     ################## INITIALIZE DOMAIN AND TIME-STEP ##################################
-
     def solve(self):
 
         mesh = self._mesh
@@ -646,6 +648,5 @@ class Darcy_CVFEM():
 
                 self._domainfile << (domains, t)
                 self._boundaryfile << (boundaries, t)
-                self._materialfile << (materials, t)
 
-"""
+                self._materialfile << (materials, t)

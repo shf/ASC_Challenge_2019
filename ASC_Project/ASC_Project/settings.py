@@ -40,6 +40,7 @@ INSTALLED_APPS = [
 
     'widget_tweaks',
 
+    'django_celery_results',
     'analyses',
     'django_cleanup',
 ]
@@ -132,3 +133,7 @@ STATICFILES_DIRS = [
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# celery settings:
+CELERY_RESULT_BACKEND = 'django-db'
+CELERY_CACHE_BACKEND = 'django-cache'
