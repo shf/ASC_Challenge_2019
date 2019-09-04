@@ -1,0 +1,37 @@
+{% extends 'BaseSidebar.html' %}
+{% load static %}
+
+{% block title %}
+{{ analysis.name }} - {{ block.super }}
+{% endblock %}
+
+{% block Analysis %}
+{{ analysis.name }}
+{% endblock %}
+
+
+{% block PageName %}
+Job status
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <img src="{% static 'giphy.gif' %}" class="img-fluid" width="200" height="200"></img>
+</div>
+<div class='progress-wrapper'>
+  <div id='progress-bar' class='progress-bar' style="background-color: #68a9ef; width: 0%;">&nbsp;</div>
+</div>
+<div id="progress-bar-message">Waiting for progress to start...</div>
+
+
+<div class="row">
+  <div class="col 12">
+    <form method="post" validate>
+      {% csrf_token %}
+      {% include 'includes/form.html' %}
+      <button type="submit" class="btn btn-success" name="btn" value="kill">Kill job</button>
+      <button type="submit" class="btn btn-success" name="btn" value="result">Go to results</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
