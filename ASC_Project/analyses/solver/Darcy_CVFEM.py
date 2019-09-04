@@ -113,33 +113,26 @@ class Darcy_CVFEM():
                     if all(item in _sections[i]['nodes'] for item in entity):
                         self._materials[cell.index()] = _sections[i]['marker'] 
 
-        class s_boundary(fe.UserExpression):
-            def eval(self, values, x):
-                    values[0] = 1.0
-                    values[1] = 2.0
+        class Permeability(fe.UserExpression):
+            def __init__(self, materials, k, **kwargs):
+                self.__materials = materials
+                self.__k = k
+                super().__init__(**kwargs)
+        
+            def eval_cell(self, values, x, ufc_cell):
+                values[0] = self.__k[self.__materials[ufc_cell.index]][0][0]
+                values[1] = self.__k[self.__materials[ufc_cell.index]][0][1]
+                values[2] = self.__k[self.__materials[ufc_cell.index]][1][0]
+                values[3] = self.__k[self.__materials[ufc_cell.index]][1][1]
+#                values[0] = 1.0
+#                values[1] = 2.0
+#                values[2] = 3.0
+#                values[3] = 4.0
             def value_shape(self):
-                return (2,)
+                return (2, 2)
 
-        self._k = s_boundary()
-        print(self._k)
+        self._k = Permeability(self._materials, self._k_exp, degree=1)
 
-        # class Permeability(fe.UserExpression):
-        #     def __init__(self, materials, k, **kwargs):
-        #         self.__materials = materials
-        #         self.__k = k
-        #         super().__init__(**kwargs)
-            
-        #     def eval_cell(self, values, x, ufc_cell):
-        #         values[0] = 1.0
-        #         values[1] = 2.0 
-
-        #     def value_shape(self):
-        #         return (2,)
-
-#       self._k = Permeability(self._materials, self._k_exp, degree=0)
-        #print('here')
-        #self._domainfile << (self._k, 0)
-        #print('here2')
         self._message_file.write("Section material created successfully. \n")
 
     def _mesh_initialization(self, _data_handling):
@@ -321,12 +314,11 @@ class Darcy_CVFEM():
         V = self._vel
         FFvsTime = self._FFvsTime
         k_exp = self._k
-        print('here')
-        v_test = fe.interpolate(k_exp, XX)
-        
-        self._boundaryfile << (v_test, 0)
-
-"""        
+#        print('here')
+#        v_test = fe.interpolate(k_exp, fe.TensorFunctionSpace(mesh, "CG", 1, shape=(2,2)))
+#        print('herrrre')
+#        self._boundaryfile << (v_test, 0)
+      
         mu_exp = self._mu_exp
         h = self._h
         g = self._body_force
@@ -650,4 +642,4 @@ class Darcy_CVFEM():
                 self._boundaryfile << (boundaries, t)
 
                 self._materialfile << (materials, t)
-"""
+
