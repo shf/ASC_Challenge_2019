@@ -12,7 +12,14 @@ def solve_darcy(self,_id):
     This function creates an instance for the Darcy_FEM solver class
     based on the database information 
     '''
-
+    """
+### ProgressBar
+    for i in range(100):
+        sleep(0.2)
+        self.update_state(state="PROGRESS",  meta={'current': i, 'total': 100, 'percent':i/100})
+        print(i)
+    self.update_state(state='COMPLETE',  meta={'current': i, 'total': 100, 'percent':i/100})
+    """
     _analysis = Analysis.objects.get(id=_id)
     resin = _analysis.resin
     viscosity = resin.viscosity

@@ -1,5 +1,5 @@
 
 $(function () {
-    var progressUrl = "{% url 'analyses:home' %}";
+    var progressUrl = "progress";
     CeleryProgressBar.initProgressBar(progressUrl)
   });
