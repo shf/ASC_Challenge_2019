@@ -13,8 +13,8 @@ def solve_darcy(self,_id):
     based on the database information 
     '''
     for i in range(100):
-        sleep(0.1)
-        self.update_state(state='PROGRESS',  meta={'current': i, 'total': 100, 'percent':i/100})
+        sleep(0.2)
+        self.update_state(state="PROGRESS",  meta={'current': i, 'total': 100, 'percent':i/100})
         print(i)
     self.update_state(state='COMPLETE',  meta={'current': i, 'total': 100, 'percent':i/100})
     '''

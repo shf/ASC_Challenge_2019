@@ -6,6 +6,7 @@ import plotly.offline as opy
 import celery
 
 from celery.result import AsyncResult
+from celery.task.control import revoke
 
 from django.conf import settings
 from django.contrib import messages
@@ -406,8 +407,14 @@ def get_progress(request, slug):
 def status_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     if request.method == 'POST':
-        form = StatusForm(request.POST) 
-        return redirect('result', slug=analysis.name)
+        form = StatusForm(request.POST)
+        if form.is_valid(): 
+            val = form.cleaned_data
+            if val['btn']=="kill":
+                revoke(analysis.results.processID, terminate=True)
+                return redirect('submit', slug=analysis.name)
+            elif val['btn']=="result":
+                return redirect('result', slug=analysis.name)
     else:
         form = StatusForm()
     Page = SideBarPage().DicUpdate("submit")

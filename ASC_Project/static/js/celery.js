@@ -1,6 +1,7 @@
 var CeleryProgressBar = (function () {
     function onSuccessDefault(progressBarElement, progressBarMessageElement) {
         progressBarElement.style.backgroundColor = '#76ce60';
+        progressBarElement.style.width = 100 + "%";
         progressBarMessageElement.innerHTML = "Success!";
     }
 
@@ -11,7 +12,7 @@ var CeleryProgressBar = (function () {
 
     function onProgressDefault(progressBarElement, progressBarMessageElement, progress) {
         progressBarElement.style.backgroundColor = '#68a9ef';
-        progressBarElement.style.width = progress.percent + "%";
+        progressBarElement.style.width = progress.percent*100 + "%";
         progressBarMessageElement.innerHTML = progress.current + ' of ' + progress.total + ' processed.';
     }
 
@@ -25,21 +26,20 @@ var CeleryProgressBar = (function () {
         var onSuccess = options.onSuccess || onSuccessDefault;
         var onError = options.onError || onErrorDefault;
         var pollInterval = options.pollInterval || 2000;
+        
 
         fetch(progressUrl).then(function(response) {
             response.json().then(function(data) {
-                if (data.PROGRESS) {
-                    onProgress(progressBarElement, progressBarMessageElement, data.progress);
+                if (data.state === 'PROGRESS') {
+                    onProgress(progressBarElement, progressBarMessageElement, data.details);
                 }
-                if (!data.COMPLETE) {
+                if (data.state !== 'COMPLETE') {
                     setTimeout(updateProgress, pollInterval, progressUrl, options);
-                } else {
-                    if (data.SUCSESS) {
-                        onSuccess(progressBarElement, progressBarMessageElement);
-                    } else {
-                        onError(progressBarElement, progressBarMessageElement);
-                    }
-                }
+                } 
+                if (data.state === 'SUCCESS') {
+                    onSuccess(progressBarElement, progressBarMessageElement);
+                } 
+                
             });
         });
     }
