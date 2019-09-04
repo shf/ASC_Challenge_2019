@@ -640,4 +640,6 @@ class Darcy_CVFEM():
 
                 self._domainfile << (domains, t)
                 self._boundaryfile << (boundaries, t)
+
                 self._materialfile << (materials, t)
+

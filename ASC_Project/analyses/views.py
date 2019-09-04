@@ -1,3 +1,5 @@
+from celery import current_app
+import json
 import os
 import subprocess
 
@@ -34,7 +36,7 @@ def PlotlyPlot(nodes, table, intensity):
         xn.append(line["x"])
         yn.append(line["y"])
         zn.append(line["z"])
-    
+
     # connectivity
     ii = []
     jj = []
@@ -67,6 +69,7 @@ def PlotlyPlot(nodes, table, intensity):
             y=yn,
             z=zn,
             showscale=showscale,
+            hoverinfo='skip',
 
             color='darkturquoise',
             colorscale='Rainbow',
@@ -86,23 +89,22 @@ def PlotlyPlot(nodes, table, intensity):
     ],
         layout=dict(
             height=600,
-            dragmode='pan',
+            autosize=True,
             scene=dict(
                 xaxis=dict(
-                    visible=False
+                    visible=True
                 ),
                 yaxis=dict(
-                    visible=False
+                    visible=True
                 ),
                 zaxis=dict(
-                    visible=False
+                    visible=True
                 ),
+                aspectmode='data',
                 camera=dict(
-                    up=dict(x=0, y=0, z=1),
-                    center=dict(x=0, y=0, z=0),
-                    eye=dict(x=0, y=0, z=-1.5)
+                    eye=dict(x=2,y=2,z=2)
                 )
-            )
+            ),
     )
     )
 
@@ -326,16 +328,16 @@ def section_page(request, slug):
 def step_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     if request.method == 'POST':
-        form = NewStepForm(request.POST, initial={'name':"Step_1"})
+        form = NewStepForm(request.POST, initial={'name': "Step_1"})
         if form.is_valid():
             step = form.cleaned_data
             step['analysis_id'] = analysis.id
             Step.objects.update_or_create(step, analysis=analysis)
             return redirect('submit', slug=analysis.name)
     else:
-        form = NewStepForm(initial={'name':"Step_1"})
+        form = NewStepForm(initial={'name': "Step_1"})
     Page = SideBarPage().DicUpdate("step")
-    return render(request,'step.html', PageVariables(Page,form,analysis))
+    return render(request, 'step.html', PageVariables(Page, form, analysis))
 
 
 def bc_page(request, slug):
@@ -379,7 +381,6 @@ def bc_page(request, slug):
     return render(request, 'bc.html', PageVariables(Page, form, analysis))
 
 
-
 def step_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     if request.method == 'POST':
@@ -395,25 +396,24 @@ def step_page(request, slug):
     Page = SideBarPage().DicUpdate("step")
     return render(request, 'step.html', PageVariables(Page, form, analysis))
 
+
 def submit_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     if request.method == 'POST':
         form = JobSubmitForm(request.POST)
-        solver=solve_darcy.delay(analysis.id)
+        solver = solve_darcy.delay(analysis.id)
         Results.objects.update_or_create(analysis=analysis)
-        Results.objects.filter(analysis=analysis).update(processID=solver.id)    
+        Results.objects.filter(analysis=analysis).update(processID=solver.id)
         return redirect('status', slug=analysis.name)
     else:
         form = JobSubmitForm()
     Page = SideBarPage().DicUpdate("submit")
     return render(request, 'submit.html', PageVariables(Page, form, analysis))
 
-from celery import current_app
-import json
 
 def get_progress(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
-    task_id=analysis.results.processID
+    task_id = analysis.results.processID
     result = AsyncResult(task_id)
     response_data = {
         'state': result.state,
@@ -421,21 +421,23 @@ def get_progress(request, slug):
     }
     return HttpResponse(json.dumps(response_data), content_type='ASC_Project/json')
 
+
 def status_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     if request.method == 'POST':
         form = StatusForm(request.POST)
-        if form.is_valid(): 
+        if form.is_valid():
             val = form.cleaned_data
-            if val['btn']=="kill":
+            if val['btn'] == "kill":
                 revoke(analysis.results.processID, terminate=True)
                 return redirect('submit', slug=analysis.name)
-            elif val['btn']=="result":
+            elif val['btn'] == "result":
                 return redirect('result', slug=analysis.name)
     else:
         form = StatusForm()
     Page = SideBarPage().DicUpdate("submit")
     return render(request, 'status.html', PageVariables(Page, form, analysis))
+
 
 def result_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
