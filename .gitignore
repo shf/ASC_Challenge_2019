@@ -8,6 +8,8 @@ UserFiles/
 Darcy
 .vscode/
 migrations/
+Library/
+ASC Application/
 
 # SQLite database files
 ParaView-5.7.0

@@ -1,3 +1,6 @@
+# for each node have an h
+# for each node have a phi
+
 import fenics as fe
 import numpy as np
 import time
@@ -29,15 +32,14 @@ class Darcy_CVFEM():
         _inlets = input['BCs']['inlets']
         _outlets = input['BCs']['outlets']
         _walls = input['BCs']['walls']
-#        _walls = input['BCs']['Walls']
 #        _Loads = input['loads']
         _step = input['step']
         
         self._logging(_data_handling)
         self._create_output_files(_data_handling)
+        self._mesh_initialization(_data_handling)
         self._define_resin(_resin)
         self._define_sections(_sections)
-        self._mesh_initialization(_data_handling)
         self._define_function_space(self._mesh)
         self._define_step(_step)
         self._define_BCs(_inlets, _outlets, _walls)
@@ -68,6 +70,7 @@ class Darcy_CVFEM():
 
         self._domainfile = fe.File(_data_handling['folder_address'] + "/results/domains.pvd")
         self._boundaryfile = fe.File(_data_handling['folder_address'] + "/results/boundaries.pvd")
+        self._materialfile = fe.File(_data_handling['folder_address'] + "/results/materials.pvd")
         self._flowfrontfile = fe.File(_data_handling['folder_address'] + "/results/flowfrontvstime.pvd")
 
         self._message_file.write("File handlers created Successfully.\n")
@@ -79,20 +82,61 @@ class Darcy_CVFEM():
 
     def _define_sections(self, _sections):
 
+        self._materials = fe.MeshFunction('size_t', self._mesh, self._mesh.topology().dim())
+        self._materials.set_all(1) # correct this
+
         self._k_exp = {}
-        self._h = {}
-        self._phi = {}
+        self._h = np.zeros(self._num_nodes)
+        self._phi = np.zeros(self._num_nodes)
         self._message_file.write("Creating Sections ... \n")
-        for section_id in _sections.keys():
-            self._k_exp[section_id] = fe.as_matrix([[_sections[section_id]['K11'], _sections[section_id]['K12']], 
-            [_sections[section_id]['K12'], _sections[section_id]['K22']]])
-            self._h[section_id] = _sections[section_id]['thickness']
-            self._phi[section_id] = _sections[section_id]['volume_fraction']
+
+        for i in _sections:
+            section_id = _sections[i]['marker']
+            self._k_exp[section_id] = fe.as_matrix([[_sections[i]['K11'], _sections[i]['K12']], 
+            [_sections[i]['K12'], _sections[i]['K22']]])
+            self._message_file.write("Section name: " + i + "\n")
             self._message_file.write("Section number: " + str(section_id) + "\n")
             self._message_file.write("Section permeability: " + str(self._k_exp[section_id]) + "\n")
-            self._message_file.write("Section thickness: " + str(self._h[section_id]) + "\n")
-            self._message_file.write("Section volume fraction: " + str(self._phi[section_id]) + "\n")
+            self._message_file.write("Section thickness: " + str(_sections[i]['thickness']) + "\n")
+            self._message_file.write("Section volume fraction: " + str(_sections[i]['volume_fraction']) + "\n")
 
+            for node in _sections[i]['nodes']:
+                self._h[node] = _sections[i]['thickness']
+                self._phi[node] = _sections[i]['volume_fraction']
+
+                ver=fe.Vertex(self._mesh,node)
+                for cell in fe.cells(ver):
+                    entity=cell.entities(0)
+                    if all(item in _sections[i]['nodes'] for item in entity):
+                        self._materials[cell.index()] = _sections[i]['marker'] 
+
+        class s_boundary(fe.UserExpression):
+            def eval(self, values, x):
+                    values[0] = 1.0
+                    values[1] = 2.0
+            def value_shape(self):
+                return (2,)
+
+        self._k = s_boundary()
+        print(self._k)
+
+        # class Permeability(fe.UserExpression):
+        #     def __init__(self, materials, k, **kwargs):
+        #         self.__materials = materials
+        #         self.__k = k
+        #         super().__init__(**kwargs)
+            
+        #     def eval_cell(self, values, x, ufc_cell):
+        #         values[0] = 1.0
+        #         values[1] = 2.0 
+
+        #     def value_shape(self):
+        #         return (2,)
+
+#       self._k = Permeability(self._materials, self._k_exp, degree=0)
+        #print('here')
+        #self._domainfile << (self._k, 0)
+        #print('here2')
         self._message_file.write("Section material created successfully. \n")
 
     def _mesh_initialization(self, _data_handling):
@@ -103,19 +147,13 @@ class Darcy_CVFEM():
         '''
         # Create mesh
         self._message_file.write("\nMESH PRE-PROCESSING \n")
-        self._message_file.write("Creating mesh in FEniCS... \n")
+        self._message_file.write("Creating mesh in FEniCS for analysis" + str(_data_handling['analysis_id']) + "... \n")
 
         self._mesh = fe.Mesh(_data_handling['folder_address'] + "/mesh.xml")
         self._mesh.rename("Current_mesh", "")
 
         self._coords = self._mesh.coordinates() # coordination of vertices
         self._num_nodes = self._mesh.num_vertices() # number of vertices
-
-        self._cell_voll = np.zeros(self._num_nodes) # Volume of CV cells
-
-        for i in range(len(self._cell_voll)):
-            for shared_cell in fe.cells(fe.MeshEntity(self._mesh, self._mesh.topology().dim()-2, i)):
-                self._cell_voll[i] = self._cell_voll[i] + (shared_cell.volume()/3.0)*self._h[0]*self._phi[0]
 
         # Create the markers
         self._BoundaryEdges = fe.BoundaryMesh(self._mesh, 'exterior').entity_map(1).array()
@@ -247,6 +285,12 @@ class Darcy_CVFEM():
         self._body_force = fe.Constant(0.0) # body force
         self._wall_condition = fe.Constant(0.0) # pressure difference perpendicular to walls
 
+        self._cell_voll = np.zeros(self._num_nodes) # Volume of CV cells
+
+        for i in range(len(self._cell_voll)):
+            for shared_cell in fe.cells(fe.MeshEntity(self._mesh, self._mesh.topology().dim()-2, i)):
+                self._cell_voll[i] = self._cell_voll[i] + (shared_cell.volume()/3.0)*self._h[i]*self._phi[i]
+
         self._message_file.write("Initial conditions applied. \n")
     ################## INITIALIZE DOMAIN AND TIME-STEP ##################################
 
@@ -263,6 +307,7 @@ class Darcy_CVFEM():
 
         domains = self._domains
         boundaries = self._boundaries
+        materials = self._materials
         vertices = self._vertices
         ZZ = self._ZZ
         XX = self._XX
@@ -273,11 +318,15 @@ class Darcy_CVFEM():
         delta_S = self._delta_saturation
         V = self._vel
         FFvsTime = self._FFvsTime
+        k_exp = self._k
+        print('here')
+        v_test = fe.interpolate(k_exp, XX)
         
-        k_exp = self._k_exp[0]
+        self._boundaryfile << (v_test, 0)
+
+"""        
         mu_exp = self._mu_exp
-        h = self._h[0]
-        phi = self._phi[0]
+        h = self._h
         g = self._body_force
         w = self._wall_condition
 
@@ -392,7 +441,7 @@ class Darcy_CVFEM():
                                     normal = [cell_midpoint[1] - edge_midpoint[1], -(cell_midpoint[0] - edge_midpoint[0])]/norm
 
                                 vel = (V[v_i] + V[v_j])/2.0
-                                flux = np.dot(vel, normal)*norm*h
+                                flux = np.dot(vel, normal)*norm*h[v_i]
                                 dt = min(dt, (1 - S[v_i])*(cell_voll[v_i])/abs(flux))
 
         dt = self._t_scaling*dt
@@ -422,7 +471,7 @@ class Darcy_CVFEM():
                                         normal = [cell_midpoint[1] - edge_midpoint[1], -(cell_midpoint[0] - edge_midpoint[0])]/norm
 
                                     vel = (V[v_i] + V[v_j])/2.0
-                                    flux = np.dot(vel, normal)*norm*h
+                                    flux = np.dot(vel, normal)*norm*h[v_i]
                                     delta_S[v_i] = delta_S[v_i] + dt*(abs(flux))/(cell_voll[v_i])
 
             # Finding dt to fill just one control volueme
@@ -588,12 +637,15 @@ class Darcy_CVFEM():
                 uh.rename("velocity", "")
 
             # plot solution and write output file
-                if t > self._current_output_step:
-                    self._resultsfile.write(ph, t)
-                    self._resultsfile.write(uh, t)
-                    self._resultsfile.write(sh, t)
+            if t > self._current_output_step:
+                self._resultsfile.write(ph, t)
+                self._resultsfile.write(uh, t)
+                self._resultsfile.write(sh, t)
 
-                    self._current_output_step = self._output_steps + t
+                self._current_output_step = self._output_steps + t
 
-                    self._domainfile << (domains, t)
-                    self._boundaryfile << (boundaries, t)
+                self._domainfile << (domains, t)
+                self._boundaryfile << (boundaries, t)
+                self._materialfile << (materials, t)
+
+"""

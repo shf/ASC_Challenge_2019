@@ -13,34 +13,39 @@ def solve_darcy(_analysis):
     resin = _analysis.resin
     viscosity = resin.viscosity
 
+    FaceList = {}
+    for item in Nodes.objects.filter(mesh_id=_analysis.mesh).values():
+        if item['FaceGroup'] not in FaceList.keys():
+            FaceList[item['FaceGroup']] = []
+        FaceList[item['FaceGroup']].append(item['NodeNum'])
+
     KXX = {}
     KXY = {}
     KYY = {}
     H = {}
     phi = {}
-    sections = _analysis.section.all()
-    for section in sections:
-        H[section.name] = 0.0
-        KXX[section.name] = 0.0
-        KXY[section.name] = 0.0
-        KYY[section.name] = 0.0
-        phi[section.name] = 0.0
-        preforms = section.preform
-        radian_rot = np.deg2rad(section.rotate)
-        T = np.array([[np.cos(radian_rot), np.sin(radian_rot)], [-np.sin(radian_rot), np.cos(radian_rot)]])
-#        for preform in preforms:
-        preform = preforms
-        H[section.name] = H[section.name] + preform.thickness
-        phi[section.name] = phi[section.name] + preform.phi*preform.thickness
-        k = T * np.array([[preform.K11, preform.K12], [preform.K12, preform.K22]])
-        KXX[section.name] = KXX[section.name] + preform.thickness * k[0][0]
-        KXY[section.name] = KXY[section.name] + preform.thickness * k[0][1]
-        KYY[section.name] = KYY[section.name] + preform.thickness * k[1][1]
-        KXX[section.name] = KXX[section.name]/H[section.name]
-        KXY[section.name] = KXY[section.name]/H[section.name]
-        KYY[section.name] = KYY[section.name]/H[section.name]
-        phi[section.name] = phi[section.name]/H[section.name]
-
+    section_names = _analysis.section.values('name').distinct()
+    for section in section_names:
+        H[section['name']] = 0.0
+        KXX[section['name']] = 0.0
+        KXY[section['name']] = 0.0
+        KYY[section['name']] = 0.0
+        phi[section['name']] = 0.0
+        preform_ids_rotate = Section.objects.filter(analysis = _analysis, name=section['name']).values('preform_id', 'rotate')
+        for item in preform_ids_rotate:
+            preform = Preform.objects.get(id = item['preform_id'])
+            radian_rot = np.deg2rad(item['rotate'])
+            T = np.array([[np.cos(radian_rot), np.sin(radian_rot)], [-np.sin(radian_rot), np.cos(radian_rot)]])
+            H[section['name']] = H[section['name']] + preform.thickness
+            phi[section['name']] = phi[section['name']] + preform.phi*preform.thickness
+            k = T * np.array([[preform.K11, preform.K12], [preform.K12, preform.K22]])
+            KXX[section['name']] = KXX[section['name']] + preform.thickness * k[0][0]
+            KXY[section['name']] = KXY[section['name']] + preform.thickness * k[0][1]
+            KYY[section['name']] = KYY[section['name']] + preform.thickness * k[1][1]
+            KXX[section['name']] = KXX[section['name']]/H[section['name']]
+            KXY[section['name']] = KXY[section['name']]/H[section['name']]
+            KYY[section['name']] = KYY[section['name']]/H[section['name']]
+            phi[section['name']] = phi[section['name']]/H[section['name']]
 
     analysis = {
         'analysis_id':_analysis.id,
@@ -51,15 +56,16 @@ def solve_darcy(_analysis):
         'viscosity':viscosity
     }
     section_data = {}
-    section_id = 0
-    for section in sections:
-        section_data[section_id]={
-            'section_name':section.name,
-            'K11':KXX[section.name],
-            'K12':KXY[section.name],
-            'K22':KYY[section.name],
-            'thickness':H[section.name],
-            'volume_fraction':phi[section.name]
+    section_id = 1
+    for section in section_names:
+        section_data[section['name']]={
+            'marker': section_id,
+            'K11':KXX[section['name']],
+            'K12':KXY[section['name']],
+            'K22':KYY[section['name']],
+            'thickness':H[section['name']],
+            'volume_fraction':phi[section['name']],
+            'nodes':FaceList[section['name']],
         }
         section_id = section_id + 1
 
@@ -77,11 +83,10 @@ def solve_darcy(_analysis):
     }
 
     EdgeList = {}
-
-    for items in Nodes.objects.filter(mesh_id=_analysis.mesh).values():
-        if items['EdgeGroup'] not in EdgeList.keys():
-            EdgeList[items['EdgeGroup']] = []
-        EdgeList[items['EdgeGroup']].append(items['NodeNum'])
+    for item in Nodes.objects.filter(mesh_id=_analysis.mesh).values():
+        if item['EdgeGroup'] not in EdgeList.keys():
+            EdgeList[item['EdgeGroup']] = []
+        EdgeList[item['EdgeGroup']].append(item['NodeNum'])
     del EdgeList["_None"]
 
     Inlets = {}
