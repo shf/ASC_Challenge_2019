@@ -15,67 +15,65 @@ Submit job
 {% endblock %}
 
 {% block content %}
-<div class="row">
-  <div class="col 12">
-    <form method="post" validate>
-      {% csrf_token %}
-      {% include 'includes/form.html' %}
-      <table class="table">
-        <tbody>
-          <tr>
-            <td class="align-middle">Analysis</td>
-            <td class="align-middle">{{ analysis.name }}</td>
-          </tr>
-          <tr>
-            <td class="align-middle">Mesh</td>
-            <td class="align-middle">{{ mesh.name }}</td>
-          </tr>
-          <tr>
-            <td class="align-middle">Resin</td>
-            <td class="align-middle">
-              {{ resin.name }}.Viscosity: {{ resin.viscosity }}
-            </td>
-          </tr>
-          <tr>
-            <td class="align-middle">Preforms</td>
-            <td class="align-middle">
-              {% for preform in preforms %}
-              {{ preform.name }}.thickness: {{ preform.thickness }}<br>
-              {{ preform.name }}.K11: {{ preform.K11 }}<br>
-              {{ preform.name }}.K12: {{ preform.K12 }}<br>
-              {{ preform.name }}.K22: {{ preform.K22 }}<br>
-              {% endfor %}
-            </td>
-          </tr>
-          <tr>
-            <td class="align-middle">Sections</td>
-            <td class="align-middle">
-              {% for section in sections %}
-              {{ section.name }}.preform: {{ section.preform.name }}<br>
-              {{ section.name }}.rotate: {{ section.rotate }}<br>
-              {% endfor %}
-            </td>
-          </tr>
-          <tr>
-            <td class="align-middle">Step</td>
-            <td class="align-middle">
-              {{ step.name }}.type: {{ step.typ }}<br>
-              {{ step.name }}.End time: {{ step.endtime }}<br>
-            </td>
-          </tr>
-          <tr>
-            <td class="align-middle">Boundary Conditions</td>
-            <td class="align-middle">
-              {% for bc in bcs %}
-              {{ bc.name }}.type: {{ bc.typ }}<br>
-              {{ bc.name }}.value: {{ bc.value }}<br>
-              {% endfor %}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <button type="submit" class="btn btn-success">Submit job</button>
-    </form>
-  </div>
-</div>
+<form method="post" validate>
+  {% csrf_token %}
+  {% include 'includes/form.html' %}
+  <table class="table">
+    <tbody>
+      <tr>
+        <td class="align-middle">Analysis</td>
+        <td class="align-middle">{{ analysis.name }}</td>
+      </tr>
+      <tr>
+        <td class="align-middle">Mesh</td>
+        <td class="align-middle">{{ mesh.name }}</td>
+      </tr>
+      <tr>
+        <td class="align-middle">Resin</td>
+        <td class="align-middle">
+          {{ resin.name }}.Viscosity: {{ resin.viscosity }}
+        </td>
+      </tr>
+      <tr>
+        <td class="align-middle">Preforms</td>
+        <td class="align-middle">
+          {% for preform in preforms %}
+          {{ preform.name }}.thickness: {{ preform.thickness }}<br>
+          {{ preform.name }}.K11: {{ preform.K11 }}<br>
+          {{ preform.name }}.K12: {{ preform.K12 }}<br>
+          {{ preform.name }}.K22: {{ preform.K22 }}<br>
+          {% endfor %}
+        </td>
+      </tr>
+      <tr>
+        <td class="align-middle">Sections</td>
+        <td class="align-middle">
+          {% for section in sections %}
+          {{ section.name }}.preform: {{ section.preform.name }}<br>
+          {{ section.name }}.rotate: {{ section.rotate }}<br>
+          {% endfor %}
+        </td>
+      </tr>
+      <tr>
+        <td class="align-middle">Step</td>
+        <td class="align-middle">
+          {{ step.name }}.type: {{ step.typ }}<br>
+          {{ step.name }}.End time: {{ step.endtime }}<br>
+        </td>
+      </tr>
+      <tr>
+        <td class="align-middle">Boundary Conditions</td>
+        <td class="align-middle">
+          {% for bc in bc %}
+          {{ bc.name }}.type: {{ bc.typ }}<br>
+          {{ bc.name }}.condition: {{ bc.condition }}<br>
+          {{ bc.name }}.value: {{ bc.value }}<br>
+          {% endfor %}
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+  <button type="submit" class="btn btn-success">Submit job</button>
+</form>
 {% endblock %}

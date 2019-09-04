@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 
 from .choice import TYPE_OF_ANALYSIS
 from .choice import TYPE_OF_BC
+from .choice import CONDITION_OF_BC
 
 # this function defines a specific folder for the files required in analyses
 def analysis_directory_path(instance,filename):
@@ -99,6 +100,7 @@ class Step(models.Model):
 class BC(models.Model):
     name = models.CharField(max_length=30)
     typ = models.CharField(max_length=30, choices=TYPE_OF_BC, default=0)
+    condition = models.CharField(max_length=30, choices=CONDITION_OF_BC, default=0)
     value = models.FloatField(default=0, help_text='Value on Boundary Condition')
     analysis = models.ForeignKey(Analysis, related_name='bc', on_delete=models.CASCADE)
 
