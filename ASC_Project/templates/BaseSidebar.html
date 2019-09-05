@@ -1,140 +1,174 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block SideBar%}
+
 <!-- Mesh item -->
 {{ page|get_active:'mesh'|safe }}
-<a class="nav-link" href="#" data-toggle="collapse" data-target="#collapse_mesh" aria-expanded="true"
-    aria-controls="collapse_mesh">
-    Mesh
-</a>
-{{ page|get_show:'mesh'|safe }}
-<div class="bg-white py-2 collapse-inner rounded">
-    {% if mesh.name|length > 0 %}
-    <h5 class="text-center">{{mesh.name}}</h5>
-    {% else %}
-    <h5 class="text-center">Empty</h5>
-    {% endif %}
-</div>
-</div>
+<li class="nav-item">
+    <a class="nav-link" href="../meshupload" data-toggle="collapse" data-target="#collapse_mesh" aria-expanded="true"
+        aria-controls="collapse_mesh">
+        <i class="fas fa-cubes"></i><span>&nbsp;&nbsp;Mesh</span>
+    </a>
+    {{ page|get_show:'mesh'|safe }}
+    <div class="bg-white py-2 collapse-inner rounded">
+        {% if mesh.name|length > 0 %}
+        <div class="d-flex justify-content-center">
+            <div class="p-2 ">
+                <a href="../meshdisplay">
+                    {{mesh.name}}
+                </a>
+            </div>
+        </div>
+        {% else %}
+        <h5 class="text-center">Empty</h5>
+        {% endif %}
+    </div>
 </li>
 <!-- End of mesh item -->
 
 <!-- Resin item -->
-{{ page|get_active:'resin'|safe }}
-<a class="nav-link" href="#" data-toggle="collapse" data-target="#collapse_resin" aria-expanded="true"
-    aria-controls="collapse_resin">
-    Resin
-</a>
-{{ page|get_show:'resin'|safe }}
-<div class="bg-white py-2 collapse-inner rounded">
-    {% if resin.name|length > 0 %}
-    <h5 class="text-center">{{resin.name}}</h5>
-    {% else %}
-    <h5 class="text-center">Empty</h5>
-    {% endif %}
-</div>
-</div>
+<li class="nav-item">
+    {{ page|get_active:'resin'|safe }}
+    <a class="nav-link" href="#" data-toggle="collapse" data-target="#collapse_resin" aria-expanded="true"
+        aria-controls="collapse_resin">
+        <i class="fas fa-tint"></i><span>&nbsp;&nbsp;Resin</span>
+    </a>
+    {{ page|get_show:'resin'|safe }}
+    <div class="bg-white py-2 collapse-inner rounded">
+        {% if resin.name|length > 0 %}
+        <a href="../resin">
+            <h6 class="text-center">{{resin.name}}</h6>
+        </a>
+        {% else %}
+        <h5 class="text-center">Empty</h5>
+        {% endif %}
+    </div>
+    </div>
 </li>
 <!-- End of Resin item -->
 
 <!-- Preform item -->
-{{ page|get_active:'preform'|safe }}
-<a class="nav-link" href="#" data-toggle="collapse" data-target="#collapse_preform" aria-expanded="true"
-    aria-controls="collapse_preform">
-    Preform
-</a>
-{{ page|get_show:'preform'|safe }}
-<div class="bg-white py-2 collapse-inner rounded">
-    {% if preforms|length > 0 %}
-    {% for r in preforms %}
-    <div class="d-flex">
-        <div class="mr-auto p-2">{{r.name}}</div>
-        <div class="p-2">{{r.thickness}}</div>
+<li class="nav-item">
+    {{ page|get_active:'preform'|safe }}
+    <a class="nav-link" href="#" data-toggle="collapse" data-target="#collapse_preform" aria-expanded="true"
+        aria-controls="collapse_preform">
+        <i class="fas fa-layer-group"></i><span>&nbsp;&nbsp;Preform</span>
+    </a>
+    {{ page|get_show:'preform'|safe }}
+    <div class="bg-white py-2 collapse-inner rounded">
+        <div class="d-flex justify-content-center">
+            <a class="btn btn-secondary" href="../preform" role="button">Modify Preforms</a>
+        </div>
+        {% if preforms|length > 0 %}
+        {% for r in preforms %}
+        <div class="d-flex">
+            <div class="mr-auto p-2 ">{{r.name}}</div>
+            <div class="p-2">{{r.thickness}}</div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <h5 class="text-center">Empty</h5>
+        {% endif %}
     </div>
-    {% endfor %}
-    {% else %}
-    <h5 class="text-center">Empty</h5>
-    {% endif %}
-</div>
-</div>
+    </div>
 </li>
 <!-- End of Preform item -->
 
 <!-- Section item -->
-{{ page|get_active:'section'|safe }}
-<a class="nav-link" href="#" data-toggle="collapse" data-target="#collapse_section" aria-expanded="true"
-    aria-controls="collapse_section">
-    Section
-</a>
-{{ page|get_show:'section'|safe }}
-<div class="bg-white py-2 collapse-inner rounded">
-    {% if sections|length > 0 %}
-    {% for r in sections %}
-    <div class="d-flex">
-        <div class="mr-auto p-2">{{r.name}}</div>
-        <div class="p-2">{{r.preform.name}}</div>
+<li class="nav-item">
+    {{ page|get_active:'section'|safe }}
+    <a class="nav-link" href="#" data-toggle="collapse" data-target="#collapse_section" aria-expanded="true"
+        aria-controls="collapse_section">
+        <i class="fas fa-puzzle-piece"></i><span>&nbsp;&nbsp;Section</span>
+    </a>
+    {{ page|get_show:'section'|safe }}
+    <div class="bg-white py-2 collapse-inner rounded">
+        <div class="d-flex justify-content-center">
+            <a class="btn btn-secondary" href="../preform" role="button">Modify Sections</a>
+        </div>
+        {% if sections|length > 0 %}
+        {% for r in sections %}
+        <div class="d-flex">
+            <div class="mr-auto p-2">{{r.name}}</div>
+            <div class="p-2">{{r.preform.name}}</div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <h5 class="text-center">Empty</h5>
+        {% endif %}
     </div>
-    {% endfor %}
-    {% else %}
-    <h5 class="text-center">Empty</h5>
-    {% endif %}
-</div>
-</div>
+    </div>
 </li>
 <!-- End of Section item -->
 
 <!-- Bc item -->
-{{ page|get_active:'bc'|safe }}
-<a class="nav-link" href="#" data-toggle="collapse" data-target="#collapse_bc" aria-expanded="true"
-    aria-controls="collapse_bc">
-    Boundary Condition
-</a>
-{{ page|get_show:'bc'|safe }}
-<div class="bg-white py-2 collapse-inner rounded">
-    {% if bc|length > 0 %}
-    {% for r in bc %}
-    <div class="d-flex">
-        <div class="mr-auto p-2">{{r.name}}</div>
-        <div class="p-2">{{r.typ}}</div>
+<li class="nav-item">
+    {{ page|get_active:'bc'|safe }}
+    <a class="nav-link" href="#" data-toggle="collapse" data-target="#collapse_bc" aria-expanded="true"
+        aria-controls="collapse_bc">
+        <i class="fas fa-border-style"></i><span>&nbsp;&nbsp;Boundary Condition</span>
+    </a>
+    {{ page|get_show:'bc'|safe }}
+    <div class="bg-white py-2 collapse-inner rounded">
+        <div class="d-flex justify-content-center">
+            <a class="btn btn-secondary" href="../preform" role="button">Modify BCs</a>
+        </div>
+        {% if bc|length > 0 %}
+        {% for r in bc %}
+        <div class="d-flex">
+            <div class="mr-auto p-2">{{r.name}}</div>
+            <div class="p-2">{{r.typ}}</div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <h5 class="text-center">Empty</h5>
+        {% endif %}
     </div>
-    {% endfor %}
-    {% else %}
-    <h5 class="text-center">Empty</h5>
-    {% endif %}
-</div>
-</div>
+    </div>
 </li>
 <!-- End of Bc item -->
 
 <!-- Step item -->
-{{ page|get_active:'step'|safe }}
-<a class="nav-link" href="#" data-toggle="collapse" data-target="#collapse_step" aria-expanded="true"
-    aria-controls="collapse_step">
-    Step
-</a>
-{{ page|get_show:'step'|safe }}
-<div class="bg-white py-2 collapse-inner rounded">
-    {% if step.name|length > 0 %}
-    <h5 class="text-center">{{step.name}}</h5>
-    {% else %}
-    <h5 class="text-center">Empty</h5>
-    {% endif %}
-</div>
-</div>
+<li class="nav-item">
+    {{ page|get_active:'step'|safe }}
+    <a class="nav-link" href="#" data-toggle="collapse" data-target="#collapse_step" aria-expanded="true"
+        aria-controls="collapse_step">
+        <i class="fas fa-wrench"></i><span>&nbsp;&nbsp;Step</span>
+    </a>
+    {{ page|get_show:'step'|safe }}
+    <div class="bg-white py-2 collapse-inner rounded">
+        {% if step.name|length > 0 %}
+        <div class="d-flex justify-content-center">
+            <div class="p-2 ">
+                <a href="../step">
+                    {{step.name}}
+                </a>
+            </div>
+        </div>
+        {% else %}
+        <h5 class="text-center">Empty</h5>
+        {% endif %}
+    </div>
+    </div>
 </li>
 <!-- End of Step item -->
 
 <!-- Submit Job item -->
-{{ page|get_active:'submit'|safe }}
-<a class="nav-link" href="#">
-    Submit Job
-</a>
+<li class="nav-item">
+    {{ page|get_active:'submit'|safe }}
+    <a class="nav-link" href="../submit">
+        <i class="fas fa-play"></i><span>&nbsp;&nbsp;Submit Job</span>
+    </a>
+</li>
 <!-- End of Submit Job  item -->
 
 <!-- Results item -->
-{{ page|get_active:'results'|safe }}
-<a class="nav-link" href="#">
-    Results
-</a>
+<li class="nav-item">
+    {{ page|get_active:'results'|safe }}
+    <a class="nav-link" href="../result">
+        <i class="fas fa-poll-h"></i><span>&nbsp;&nbsp;Results</span>
+    </a>
+</li>
 <!-- End of Results   item -->
 
 {% endblock %}

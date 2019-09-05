@@ -38,6 +38,7 @@ class MeshImport():
                 _flag = "Elements"
         self._connectivity = _connectivity
         self._Nodes=_nodes
+
         # writing xml file
         directory = self._FileAddress.split("/")
         directory.pop()
@@ -92,9 +93,15 @@ class MeshImport():
         # Remove zero values
         for key, value in _groups.items():
             _groups[key] = list(filter((0).__ne__, value))
-        
+            
+        # renumbering nodes to be compatible with XML
         for key,value in _groups.items():
-            _groups[key] =[i-1 for i in value]
+            _groups[key] = [i-1 for i in value]
+        
+        # removing empty keys if exist
+        _groups.pop('', None)
+        
+        # extracting faces
         _Faces = {}
         if len(self._connectivity) > 1:
             for key, grp in _groups.items():
@@ -112,6 +119,8 @@ class MeshImport():
         _groups.pop('', None)
         for key, value in _Faces.items():
             _Faces[key]=list(map(int, value))
+
+        # if there is no face defined
         if len(_Faces)==0:
             _Faces['AllDomain']=list(map(int, self._Nodes))
         for key, value in _groups.items():

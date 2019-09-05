@@ -1,8 +1,9 @@
 {% load widget_tweaks %}
 
 {% for field in form %}
-<div class="form-group">
+<div id='{{field.html_name}}' class="form-group">
     {{ field.label_tag }}
+    <!-- {{field.html_name}} -->
 
     {% if form.is_bound %}
         {% if field.errors %}

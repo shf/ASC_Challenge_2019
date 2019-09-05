@@ -26,8 +26,8 @@ from analyses import views
 urlpatterns = [
     path('', views.home, name='home'),
     path('admin/', admin.site.urls),
-    path('<slug:slug>/mesh/', views.mesh_page, name='mesh'),
-    path('<slug:slug>/mesh/<int:pk>', views.display_mesh, name='meshdisplay'),
+    path('<slug:slug>/meshupload/', views.mesh_page, name='meshupload'),
+    path('<slug:slug>/meshdisplay/', views.display_mesh, name='meshdisplay'),
     path('<slug:slug>/resin/', views.resin_page, name='resin'),
     path('<slug:slug>/preform/', views.preform_page, name='preform'),
     path('<slug:slug>/section/', views.section_page, name='section'),

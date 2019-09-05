@@ -15,12 +15,13 @@ Mesh
 
 {% block content %}
 
-{% if graph %}
-<div>
-  {{ graph|safe }}
-</div>
-{% endif %}
+
 <div class="row">
+  <div class="col-9">
+    {% if graph %}
+    {{ graph|safe }}
+    {% endif %}
+  </div>
   <div class="col-3">
     <table class="table table-striped">
       <thead class="thead-inverse">
@@ -38,8 +39,7 @@ Mesh
         {% endfor %}
       </tbody>
     </table>
-  </div>
-  <div class="col-3">
+    <br>
     <table class="table table-striped">
       <thead class="thead-inverse">
         <tr>
@@ -55,16 +55,15 @@ Mesh
       </tbody>
     </table>
   </div>
-  <div class="col-1">
-  </div>
   <div class="col-4">
     <form method="post" validate>
 
       {% csrf_token %}
-      {{ form.as_p }}
-      <!-- {% include 'includes/form.html' %} -->
-
-      <button type="submit" class="btn btn-success">Submit</button>
+      {% include 'includes/form.html' %}
+      <div>
+        <button type="submit" class="btn btn-success" name="btn" value="upload">Upload again</button>
+        <button type="submit" class="btn btn-success" name="btn" value="confirm">Confirm</button>
+      </div>
     </form>
   </div>
 </div>

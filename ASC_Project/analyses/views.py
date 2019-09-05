@@ -1,13 +1,14 @@
+import json
 import os
 import subprocess
+import time
 
+import celery
 import plotly.graph_objs as go
 import plotly.offline as opy
-import celery
-
+from celery import current_app
 from celery.result import AsyncResult
 from celery.task.control import revoke
-
 from django.conf import settings
 from django.contrib import messages
 from django.core.files.storage import FileSystemStorage
@@ -34,7 +35,7 @@ def PlotlyPlot(nodes, table, intensity):
         xn.append(line["x"])
         yn.append(line["y"])
         zn.append(line["z"])
-    
+
     # connectivity
     ii = []
     jj = []
@@ -67,6 +68,7 @@ def PlotlyPlot(nodes, table, intensity):
             y=yn,
             z=zn,
             showscale=showscale,
+            hoverinfo='skip',
 
             color='darkturquoise',
             colorscale='Rainbow',
@@ -86,23 +88,22 @@ def PlotlyPlot(nodes, table, intensity):
     ],
         layout=dict(
             height=600,
-            dragmode='pan',
+            autosize=True,
             scene=dict(
                 xaxis=dict(
-                    visible=False
+                    visible=True
                 ),
                 yaxis=dict(
-                    visible=False
+                    visible=True
                 ),
                 zaxis=dict(
-                    visible=False
+                    visible=True
                 ),
+                aspectmode='data',
                 camera=dict(
-                    up=dict(x=0, y=0, z=1),
-                    center=dict(x=0, y=0, z=0),
-                    eye=dict(x=0, y=0, z=-1.5)
+                    eye=dict(x=2,y=2,z=2)
                 )
-            )
+            ),
     )
     )
 
@@ -181,7 +182,7 @@ def home(request):
             analysis = form.save(commit=False)
             analysis.save()
 
-            return redirect('mesh', slug=analysis.name)
+            return redirect('meshupload', slug=analysis.name)
     else:
         form = NewAnalysisForm(initial={'name': "Analysis_1"})
     Page = SideBarPage().DicUpdate("")
@@ -193,16 +194,16 @@ def mesh_page(request, slug):
     if request.method == 'POST':
         form = NewMeshForm(request.POST, request.FILES)
         if form.is_valid():
-            mesh = form.save(commit=False)
-            mesh.analysis = analysis
-            mesh.save()
-            Address = get_object_or_404(Mesh, id=mesh.id)
+            MeshFile = form.cleaned_data
+            MeshFile['analysis_id'] = analysis.id
+            Mesh.objects.update_or_create(MeshFile, analysis=analysis)
+            mesh = get_object_or_404(Mesh, analysis_id=analysis.id)
 
             # mesh name from file name
-            mesh.name = str(Address.address).split("/")[1].split(".")[0]
+            mesh.name = str(mesh.address).split("/")[1].split(".")[0]
 
             # save mesh in xml format
-            MeshImp = MeshImport("media/"+str(Address.address))
+            MeshImp = MeshImport("media/"+str(mesh.address))
             MeshImp.UNVtoXMLConverter()
 
             # save mesh data in database
@@ -228,29 +229,28 @@ def mesh_page(request, slug):
                     obj = Nodes.objects.filter(NodeNum=item, mesh_id=mesh.id)
                     obj.update(FaceGroup=key)
 
-            return redirect('meshdisplay', slug=analysis.name, pk=mesh.id)
+            return redirect('meshdisplay', slug=analysis.name)
     else:
         form = NewMeshForm()
     Page = SideBarPage().DicUpdate("")
     return render(request, 'mesh.html', PageVariables(Page, form, analysis))
 
 
-def display_mesh(request, slug, pk):
+def display_mesh(request, slug):
 
     analysis = get_object_or_404(Analysis, name=slug)
-    nodes = Nodes.objects.filter(mesh_id=pk)
-    table = Connectivity.objects.filter(mesh_id=pk)
+    nodes = Nodes.objects.filter(mesh_id=analysis.mesh.id)
+    table = Connectivity.objects.filter(mesh_id=analysis.mesh.id)
     div = PlotlyPlot(nodes, table, None)
 
     if request.method == 'POST':
         form = MeshConfirmationForm(request.POST)
         if form.is_valid():
-            cd = form.cleaned_data
-            if cd['like'] == 'yes':
+            val = form.cleaned_data
+            if val['btn'] == 'confirm':
                 return redirect('resin', slug=analysis.name)
-            else:
-                Mesh.objects.filter(id=pk).delete()
-                return redirect('mesh', slug=analysis.name)
+            elif val['btn'] == 'upload':
+                return redirect('meshupload', slug=analysis.name)
     else:
         form = MeshConfirmationForm()
     Page = SideBarPage().DicUpdate("mesh")
@@ -326,16 +326,16 @@ def section_page(request, slug):
 def step_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     if request.method == 'POST':
-        form = NewStepForm(request.POST, initial={'name':"Step_1"})
+        form = NewStepForm(request.POST, initial={'name': "Step_1"})
         if form.is_valid():
             step = form.cleaned_data
             step['analysis_id'] = analysis.id
             Step.objects.update_or_create(step, analysis=analysis)
             return redirect('submit', slug=analysis.name)
     else:
-        form = NewStepForm(initial={'name':"Step_1"})
+        form = NewStepForm(initial={'name': "Step_1"})
     Page = SideBarPage().DicUpdate("step")
-    return render(request,'step.html', PageVariables(Page,form,analysis))
+    return render(request, 'step.html', PageVariables(Page, form, analysis))
 
 
 def bc_page(request, slug):
@@ -379,41 +379,38 @@ def bc_page(request, slug):
     return render(request, 'bc.html', PageVariables(Page, form, analysis))
 
 
-
 def step_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     if request.method == 'POST':
         form = NewStepForm(request.POST, initial={'name': "Step_1"})
         if form.is_valid():
-            step = form.save(commit=False)
-            step.analysis = analysis
-            step.save()
-
+            step = form.cleaned_data
+            step['analysis_id'] = analysis.id
+            Step.objects.update_or_create(step, analysis=analysis)
             return redirect('submit', slug=analysis.name)
     else:
         form = NewStepForm(initial={'name': "Step_1"})
     Page = SideBarPage().DicUpdate("step")
     return render(request, 'step.html', PageVariables(Page, form, analysis))
 
+
 def submit_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     if request.method == 'POST':
         form = JobSubmitForm(request.POST)
-        solver=solve_darcy.delay(analysis.id)
+        solver = solve_darcy.delay(analysis.id)
         Results.objects.update_or_create(analysis=analysis)
-        Results.objects.filter(analysis=analysis).update(processID=solver.id)    
+        Results.objects.filter(analysis=analysis).update(processID=solver.id)
         return redirect('status', slug=analysis.name)
     else:
         form = JobSubmitForm()
     Page = SideBarPage().DicUpdate("submit")
     return render(request, 'submit.html', PageVariables(Page, form, analysis))
 
-from celery import current_app
-import json
 
 def get_progress(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
-    task_id=analysis.results.processID
+    task_id = analysis.results.processID
     result = AsyncResult(task_id)
     response_data = {
         'state': result.state,
@@ -421,16 +418,17 @@ def get_progress(request, slug):
     }
     return HttpResponse(json.dumps(response_data), content_type='ASC_Project/json')
 
+
 def status_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     if request.method == 'POST':
         form = StatusForm(request.POST)
-        if form.is_valid(): 
+        if form.is_valid():
             val = form.cleaned_data
-            if val['btn']=="kill":
+            if val['btn'] == "kill":
                 revoke(analysis.results.processID, terminate=True)
                 return redirect('submit', slug=analysis.name)
-            elif val['btn']=="result":
+            elif val['btn'] == "result":
                 return redirect('result', slug=analysis.name)
     else:
         form = StatusForm()
@@ -458,6 +456,7 @@ def result_page(request, slug):
                           directory + '/ParaView-5.7.0/lib/python3.7/site-packages/wslink/launcher.py',
                           directory + '/ParaView-5.7.0/launcher.config'],
                          )
+    time.sleep(2)
     # save the process id to database, might be useful for concurrent visulization
     analysis.results.processID = p.pid
     analysis.results.save()
