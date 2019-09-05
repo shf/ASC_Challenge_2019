@@ -24,8 +24,7 @@ class NewMeshForm(forms.ModelForm):
         fields = ['address']
 
 class MeshConfirmationForm(forms.Form):
-    like = forms.CharField(label= 'Do you confirm the mesh?', 
-        widget=forms.RadioSelect(choices=BINARY_CHOICES))
+    btn = forms.CharField(label='', widget=forms.HiddenInput())
 
 
 class NewResinForm(forms.ModelForm):

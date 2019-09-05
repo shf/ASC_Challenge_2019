@@ -1,15 +1,14 @@
-from celery import current_app
 import json
 import os
 import subprocess
+import time
 
+import celery
 import plotly.graph_objs as go
 import plotly.offline as opy
-import celery
-
+from celery import current_app
 from celery.result import AsyncResult
 from celery.task.control import revoke
-
 from django.conf import settings
 from django.contrib import messages
 from django.core.files.storage import FileSystemStorage
@@ -183,7 +182,7 @@ def home(request):
             analysis = form.save(commit=False)
             analysis.save()
 
-            return redirect('mesh', slug=analysis.name)
+            return redirect('meshupload', slug=analysis.name)
     else:
         form = NewAnalysisForm(initial={'name': "Analysis_1"})
     Page = SideBarPage().DicUpdate("")
@@ -195,16 +194,16 @@ def mesh_page(request, slug):
     if request.method == 'POST':
         form = NewMeshForm(request.POST, request.FILES)
         if form.is_valid():
-            mesh = form.save(commit=False)
-            mesh.analysis = analysis
-            mesh.save()
-            Address = get_object_or_404(Mesh, id=mesh.id)
+            mesh = form.cleaned_data
+            mesh['analysis_id'] = analysis.id
+            Mesh.objects.update_or_create(mesh, analysis=analysis)
+            mesh = get_object_or_404(Mesh, analysis_id=analysis.id)
 
             # mesh name from file name
-            mesh.name = str(Address.address).split("/")[1].split(".")[0]
+            mesh.name = str(mesh.address).split("/")[1].split(".")[0]
 
             # save mesh in xml format
-            MeshImp = MeshImport("media/"+str(Address.address))
+            MeshImp = MeshImport("media/"+str(mesh.address))
             MeshImp.UNVtoXMLConverter()
 
             # save mesh data in database
@@ -230,29 +229,28 @@ def mesh_page(request, slug):
                     obj = Nodes.objects.filter(NodeNum=item, mesh_id=mesh.id)
                     obj.update(FaceGroup=key)
 
-            return redirect('meshdisplay', slug=analysis.name, pk=mesh.id)
+            return redirect('meshdisplay', slug=analysis.name)
     else:
         form = NewMeshForm()
     Page = SideBarPage().DicUpdate("")
     return render(request, 'mesh.html', PageVariables(Page, form, analysis))
 
 
-def display_mesh(request, slug, pk):
+def display_mesh(request, slug):
 
     analysis = get_object_or_404(Analysis, name=slug)
-    nodes = Nodes.objects.filter(mesh_id=pk)
-    table = Connectivity.objects.filter(mesh_id=pk)
+    nodes = Nodes.objects.filter(mesh_id=analysis.mesh.id)
+    table = Connectivity.objects.filter(mesh_id=analysis.mesh.id)
     div = PlotlyPlot(nodes, table, None)
 
     if request.method == 'POST':
         form = MeshConfirmationForm(request.POST)
         if form.is_valid():
-            cd = form.cleaned_data
-            if cd['like'] == 'yes':
+            val = form.cleaned_data
+            if val['btn'] == 'confirm':
                 return redirect('resin', slug=analysis.name)
-            else:
-                Mesh.objects.filter(id=pk).delete()
-                return redirect('mesh', slug=analysis.name)
+            elif val['btn'] == 'upload':
+                return redirect('meshupload', slug=analysis.name)
     else:
         form = MeshConfirmationForm()
     Page = SideBarPage().DicUpdate("mesh")
@@ -438,7 +436,6 @@ def status_page(request, slug):
     Page = SideBarPage().DicUpdate("submit")
     return render(request, 'status.html', PageVariables(Page, form, analysis))
 
-
 def result_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     directory = os.path.abspath(os.path.join(os.getcwd(), '..'))
@@ -454,6 +451,7 @@ def result_page(request, slug):
     # kill previously run server
     # this allows for just one concurrent result,
     subprocess.call(['killall', 'pvpython'])
+    time.sleep(2)
     os.system('rm -f {}/ParaView-5.7.0/viz-logs/*.txt'.format(directory))
     # run new server with modified configuration
     p = subprocess.Popen([directory + '/ParaView-5.7.0/bin/pvpython',
