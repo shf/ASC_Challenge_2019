@@ -7,7 +7,7 @@ import numpy as np
 from celery import shared_task
 
 @shared_task (bind=True)
-def solve_darcy(self,_id):
+def solve_darcy(progress,_id):
     '''
     This function creates an instance for the Darcy_FEM solver class
     based on the database information 
@@ -150,5 +150,5 @@ def solve_darcy(self,_id):
     }
 
     problem=Darcy_CVFEM(InputData)
-    problem.solve() 
+    problem.solve(progress) 
 

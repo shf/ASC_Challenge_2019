@@ -13,7 +13,7 @@ var CeleryProgressBar = (function () {
     function onProgressDefault(progressBarElement, progressBarMessageElement, progress) {
         progressBarElement.style.backgroundColor = '#68a9ef';
         progressBarElement.style.width = progress.percent*100 + "%";
-        progressBarMessageElement.innerHTML = progress.current + ' of ' + progress.total + ' processed.';
+        progressBarMessageElement.innerHTML = 'Iteration: ' + progress.iteration + ', and ' + progress.fill_time + ' seconds of fill time has been passed.';
     }
 
     function updateProgress (progressUrl, options) {

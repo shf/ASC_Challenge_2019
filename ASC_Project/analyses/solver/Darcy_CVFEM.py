@@ -1,3 +1,7 @@
+# 3D mesh compatible
+# the K in 3D need to be adjusted
+# Test for flow flux input
+
 from __future__ import absolute_import, unicode_literals
 
 import fenics as fe
@@ -41,9 +45,9 @@ class Darcy_CVFEM():
         self._logging(_data_handling)
         self._create_output_files(_data_handling)
         self._mesh_initialization(_data_handling)
+        self._define_function_space(self._mesh)
         self._define_resin(_resin)
         self._define_sections(_sections)
-        self._define_function_space(self._mesh)
         self._define_step(_step)
         self._define_BCs(_inlets, _outlets, _walls)
         self._define_initial_conditions()
@@ -88,18 +92,18 @@ class Darcy_CVFEM():
         self._materials = fe.MeshFunction('size_t', self._mesh, self._mesh.topology().dim())
         self._materials.set_all(1) # correct this
 
-        self._k_exp = {}
+        self._k = {}
         self._h = np.zeros(self._num_nodes)
         self._phi = np.zeros(self._num_nodes)
         self._message_file.write("Creating Sections ... \n")
 
         for i in _sections:
             section_id = _sections[i]['marker']
-            self._k_exp[section_id] = fe.as_matrix([[_sections[i]['K11'], _sections[i]['K12']], 
+            self._k[section_id] = fe.as_matrix([[_sections[i]['K11'], _sections[i]['K12']], 
             [_sections[i]['K12'], _sections[i]['K22']]])
             self._message_file.write("Section name: " + i + "\n")
             self._message_file.write("Section number: " + str(section_id) + "\n")
-            self._message_file.write("Section permeability: " + str(self._k_exp[section_id]) + "\n")
+            self._message_file.write("Section permeability: " + str(self._k[section_id]) + "\n")
             self._message_file.write("Section thickness: " + str(_sections[i]['thickness']) + "\n")
             self._message_file.write("Section volume fraction: " + str(_sections[i]['volume_fraction']) + "\n")
 
@@ -114,24 +118,47 @@ class Darcy_CVFEM():
                         self._materials[cell.index()] = _sections[i]['marker'] 
 
         class Permeability(fe.UserExpression):
-            def __init__(self, materials, k, **kwargs):
+            def __init__(self, materials, k, dim, **kwargs):
                 self.__materials = materials
                 self.__k = k
+                self.__dim = dim
                 super().__init__(**kwargs)
         
             def eval_cell(self, values, x, ufc_cell):
-                values[0] = self.__k[self.__materials[ufc_cell.index]][0][0]
-                values[1] = self.__k[self.__materials[ufc_cell.index]][0][1]
-                values[2] = self.__k[self.__materials[ufc_cell.index]][1][0]
-                values[3] = self.__k[self.__materials[ufc_cell.index]][1][1]
-#                values[0] = 1.0
-#                values[1] = 2.0
-#                values[2] = 3.0
-#                values[3] = 4.0
+                if self.__dim == 2:
+                    values[0] = self.__k[self.__materials[ufc_cell.index]][0][0]
+                    values[1] = self.__k[self.__materials[ufc_cell.index]][0][1]
+                    values[2] = self.__k[self.__materials[ufc_cell.index]][1][0]
+                    values[3] = self.__k[self.__materials[ufc_cell.index]][1][1]
+                elif self.__dim == 3:
+                    values[0] = self.__k[self.__materials[ufc_cell.index]][0][0]
+                    values[1] = self.__k[self.__materials[ufc_cell.index]][0][1]
+                    values[2] = 0.0
+                    values[3] = self.__k[self.__materials[ufc_cell.index]][1][0]
+                    values[4] = self.__k[self.__materials[ufc_cell.index]][1][1]
+                    values[5] = 0.0
+                    values[6] = 0.0
+                    values[7] = 0.0
+                    values[8] = 0.0
             def value_shape(self):
-                return (2, 2)
+                if self.__dim == 2:
+                    return (2, 2)
+                elif self.__dim == 3:
+                    return (3, 3)
 
-        self._k = Permeability(self._materials, self._k_exp, degree=1)
+        self._k_exp = Permeability(self._materials, self._k, self._dim, degree=1)
+
+        
+        v2d = fe.vertex_to_dof_map(self._QQ)
+        self._h_exp = fe.Function(self._QQ)
+        self._h_exp.rename("Thickness", "")
+        for i in range(len(self._h)):
+            self._h_exp.vector()[v2d[i]] = self._h[i]
+
+        self._phi_exp = fe.Function(self._QQ)
+        self._phi_exp.rename("Thickness", "")
+        for i in range(len(self._phi)):
+            self._phi_exp.vector()[v2d[i]] = self._phi[i]
 
         self._message_file.write("Section material created successfully. \n")
 
@@ -148,7 +175,9 @@ class Darcy_CVFEM():
         self._mesh = fe.Mesh(_data_handling['folder_address'] + "/mesh.xml")
         self._mesh.rename("Current_mesh", "")
 
+ 
         self._coords = self._mesh.coordinates() # coordination of vertices
+        self._dim = np.shape(self._coords)[1]
         self._num_nodes = self._mesh.num_vertices() # number of vertices
 
         # Create the markers
@@ -187,7 +216,10 @@ class Darcy_CVFEM():
         # Define vector unknowns
         self._saturation = np.zeros(self._num_nodes) # Saturation vector
         self._delta_saturation = np.zeros(self._num_nodes) # growth of saturation in one step
-        self._vel = np.zeros((self._num_nodes, 2)) # Velocity Vector
+        if self._dim == 2:
+            self._vel = np.zeros((self._num_nodes, 2)) # Velocity Vector
+        elif self._dim == 3:
+            self._vel = np.zeros((self._num_nodes, 3)) # Velocity Vector
         self._FFvsTime = np.zeros(self._num_nodes)
 
         self._message_file.write("Function spaces created successfully. \n")
@@ -232,7 +264,7 @@ class Darcy_CVFEM():
         self._vertices_inlet = []
         self._vertices_outlet = []
         self._pressure_inlet_dicts = []
-        self._velocity_inlet_dicts = []
+        self._flux_inlet_info = {}
         self._pressure_outlet_dicts = []
 
         for i in self._inlets:
@@ -257,7 +289,7 @@ class Darcy_CVFEM():
             if self._inlets[i]['condition'] == 'Pressure':
                 self._pressure_inlet_dicts.append(i)
             else:
-                self._velocity_inlet_dicts.append(i)
+                self._flux_inlet_info[i] = {}
                         
         for i in self._outlets:
             for node in self._outlets[i]['nodes']:
@@ -268,14 +300,43 @@ class Darcy_CVFEM():
             if self._outlets[i]['condition'] == 'Pressure':
                 self._pressure_outlet_dicts.append(i)
 
+        self._vel_inlet = np.zeros(self._num_nodes)
+
+        for i in self._flux_inlet_info.keys():
+            for node in self._inlets[i]['nodes']:
+                ver = fe.Vertex(self._mesh,node)
+                width = 0.0
+                for edge in fe.edges(ver):
+                    entity=edge.entities(0)
+                    if all(item in self._inlets[i]['nodes'] for item in entity):
+                        width = width + edge.length()/2
+                area = width*self._h[node]
+                self._vel_inlet[node] = self._inlets[i]['value']/area
+            
+        
+        v2d = fe.vertex_to_dof_map(self._QQ)
+        self._vel_exp = fe.Function(self._QQ)
+        self._vel_exp.rename("VelocityInlet", "")
+        for i in range(len(self._vel_inlet)):
+            self._vel_exp.vector()[v2d[i]] = self._vel_inlet[i]
+
     def _define_initial_conditions(self):
         '''
         define initial conditions and source terms
         '''
         # Set the saturation at the inlet equal to one
-        for i in self._vertices_inlet:
-            self._saturation[i] = 1.0
-            self._FFvsTime[i] = 0.0
+        # and find the maximum distance of nodes to inlet
+
+        self._max_distant = 0.0
+
+        for v_i in self._vertices_inlet:
+            coord_i = self._coords[v_i]
+            self._saturation[v_i] = 1.0
+            self._FFvsTime[v_i] = 0.0
+            for v_j in range(self._num_nodes):
+                coord_j = self._coords[v_j]
+                distance = np.linalg.norm(coord_i - coord_j)
+                self._max_distant = max(self._max_distant, distance)
 
         # Define source function
         self._body_force = fe.Constant(0.0) # body force
@@ -289,7 +350,7 @@ class Darcy_CVFEM():
 
         self._message_file.write("Initial conditions applied. \n")
     ################## INITIALIZE DOMAIN AND TIME-STEP ##################################
-    def solve(self):
+    def solve(self, progress):
 
         mesh = self._mesh
         coords = self._coords
@@ -313,13 +374,15 @@ class Darcy_CVFEM():
         delta_S = self._delta_saturation
         V = self._vel
         FFvsTime = self._FFvsTime
-        k_exp = self._k
+        k_exp = self._k_exp
 #        print('here')
 #        v_test = fe.interpolate(k_exp, fe.TensorFunctionSpace(mesh, "CG", 1, shape=(2,2)))
 #        print('herrrre')
 #        self._boundaryfile << (v_test, 0)
       
         mu_exp = self._mu_exp
+        phi_exp = self._phi_exp
+        h_exp = self._h_exp
         h = self._h
         g = self._body_force
         w = self._wall_condition
@@ -379,8 +442,8 @@ class Darcy_CVFEM():
 
         # b) variational problem and computing pressure
         normal_terms = []
-        for i in self._velocity_inlet_dicts:
-            normal_terms.append(self._inlets[i]['value']*q*ds_wall(self._inlets[i]['marker']))
+        for i in self._flux_inlet_info.keys():
+            normal_terms.append(self._vel_exp*q*ds_wall(self._inlets[i]['marker']))
         
         for i in self._walls:
             normal_terms.append(w*q*ds_wall(self._walls[i]['marker']))
@@ -395,10 +458,18 @@ class Darcy_CVFEM():
         uh = fe.project(-k_exp/mu_exp*fe.grad(ph), XX)
         d2v = fe.dof_to_vertex_map(XX)
 
-        for i in range(len(V)):
-            V[int(d2v[2*i]/2), 0] = uh.vector()[2*i]
-            V[int(d2v[2*i]/2), 1] = uh.vector()[2*i+1]
+        if self._dim == 2:
+            for i in range(len(V)):
+                V[int(d2v[2*i]/2), 0] = uh.vector()[2*i]
+                V[int(d2v[2*i]/2), 1] = uh.vector()[2*i+1]
+        elif self._dim == 3:
+            for i in range(len(V)):
+                V[int(d2v[3*i]/3), 0] = uh.vector()[3*i]
+                V[int(d2v[3*i]/3), 1] = uh.vector()[3*i+1]
+                V[int(d2v[3*i]/3), 2] = uh.vector()[3*i+2]
         uh.rename("velocity", "")
+
+#        self._max_estimate_TEND = self._max_distant/np.amax(V)
 
         sh = fe.Function(QQ)
         ffvstimeh = fe.Function(QQ)
@@ -426,13 +497,25 @@ class Darcy_CVFEM():
                                 coord_i = coords[v_i]
                                 coord_j = coords[v_j]
                                 edge_midpoint = (coord_i + coord_j)/2.0
-                                norm = np.linalg.norm(cell_midpoint - edge_midpoint)
-                                normal = [-(cell_midpoint[1] - edge_midpoint[1]), (cell_midpoint[0] - edge_midpoint[0])]/norm
-                                distance = np.linalg.norm([(coord_i[0] - coord_j[0]), (coord_i[1] - coord_j[1])])
-                                inward_normal = [(coord_i[0] - coord_j[0]), (coord_i[1] - coord_j[1])]/distance
+                                if self._dim == 2:
+                                    norm = np.linalg.norm(cell_midpoint - edge_midpoint)
+                                    normal = [-(cell_midpoint[1] - edge_midpoint[1]), (cell_midpoint[0] - edge_midpoint[0])]/norm
+                                    distance = np.linalg.norm(coord_i - coord_j)
+                                    inward_normal = [(coord_i[0] - coord_j[0]), (coord_i[1] - coord_j[1])]/distance
 
-                                if np.dot(inward_normal, normal) < 0:
-                                    normal = [cell_midpoint[1] - edge_midpoint[1], -(cell_midpoint[0] - edge_midpoint[0])]/norm
+                                    if np.dot(inward_normal, normal) < 0:
+                                        normal = -normal
+
+                                elif self._dim == 3:
+                                    norm = np.linalg.norm(cell_midpoint - edge_midpoint)
+                                    normal_on_cell = np.cross(cell_midpoint - edge_midpoint, coord_i - coord_j)
+                                    normal_on_edge = np.cross(normal_on_cell, cell_midpoint - edge_midpoint)
+                                    normal = normal_on_edge / np.linalg.norm(normal_on_edge)
+                                    distance =  np.linalg.norm(coord_i - coord_j)
+                                    inward_normal = (coord_i - coord_j)/distance
+                                
+                                    if np.dot(inward_normal, normal) < 0:
+                                        normal = -normal
 
                                 vel = (V[v_i] + V[v_j])/2.0
                                 flux = np.dot(vel, normal)*norm*h[v_i]
@@ -456,13 +539,24 @@ class Darcy_CVFEM():
                                     coord_i = coords[v_i]
                                     coord_j = coords[v_j]
                                     edge_midpoint = (coord_i + coord_j)/2.0
-                                    norm = np.linalg.norm(cell_midpoint - edge_midpoint)
-                                    normal = [-(cell_midpoint[1] - edge_midpoint[1]), cell_midpoint[0] - edge_midpoint[0]]/norm
-                                    distance = np.linalg.norm([(coord_i[0] - coord_j[0]), (coord_i[1] - coord_j[1])])
-                                    inward_normal = [(coord_i[0] - coord_j[0]), (coord_i[1] - coord_j[1])]/distance
+                                    if self._dim == 2:
+                                        norm = np.linalg.norm(cell_midpoint - edge_midpoint)
+                                        normal = [-(cell_midpoint[1] - edge_midpoint[1]), (cell_midpoint[0] - edge_midpoint[0])]/norm
+                                        distance = np.linalg.norm(coord_i - coord_j)
+                                        inward_normal = [(coord_i[0] - coord_j[0]), (coord_i[1] - coord_j[1])]/distance
 
-                                    if np.dot(inward_normal, normal) < 0:
-                                        normal = [cell_midpoint[1] - edge_midpoint[1], -(cell_midpoint[0] - edge_midpoint[0])]/norm
+                                        if np.dot(inward_normal, normal) < 0:
+                                            normal = -normal
+
+                                    elif self._dim == 3:
+                                        normal_on_cell = np.cross(cell_midpoint - edge_midpoint, coord_i - coord_j)
+                                        normal_on_edge = np.cross(normal_on_cell, cell_midpoint - edge_midpoint)
+                                        normal = normal_on_edge / np.linalg.norm(normal_on_edge)
+                                        distance =  np.linalg.norm(coord_i - coord_j)
+                                        inward_normal = (coord_i - coord_j)/distance
+                                    
+                                        if np.dot(inward_normal, normal) < 0:
+                                            normal = -normal
 
                                     vel = (V[v_i] + V[v_j])/2.0
                                     flux = np.dot(vel, normal)*norm*h[v_i]
@@ -607,8 +701,8 @@ class Darcy_CVFEM():
 
                 # variational problem and computing pressure
                 normal_terms = []
-                for i in self._velocity_inlet_dicts:
-                    normal_terms.append(self._inlets[i]['value']*q*ds_wall(self._inlets[i]['marker']))
+                for i in self._flux_inlet_info.keys():
+                    normal_terms.append(self._vel_exp*q*ds_wall(self._inlets[i]['marker']))
                 
                 for i in self._walls:
                     normal_terms.append(w*q*ds_wall(self._walls[i]['marker']))
@@ -624,10 +718,15 @@ class Darcy_CVFEM():
                 # postprocess velocity
                 uh = fe.project(-k_exp/mu_exp*fe.grad(ph), XX)
                 d2v = fe.dof_to_vertex_map(XX)
-                for i in range(len(V)):
-                    V[int(d2v[2*i]/2), 0] = uh.vector()[2*i]
-                    V[int(d2v[2*i]/2), 1] = uh.vector()[2*i+1]
-
+                if self._dim == 2:
+                    for i in range(len(V)):
+                        V[int(d2v[2*i]/2), 0] = uh.vector()[2*i]
+                        V[int(d2v[2*i]/2), 1] = uh.vector()[2*i+1]
+                elif self._dim == 3:
+                    for i in range(len(V)):
+                        V[int(d2v[3*i]/3), 0] = uh.vector()[3*i]
+                        V[int(d2v[3*i]/3), 1] = uh.vector()[3*i+1]
+                        V[int(d2v[3*i]/3), 2] = uh.vector()[3*i+2]
                 uh.rename("velocity", "")
 
             # plot solution and write output file
@@ -640,6 +739,6 @@ class Darcy_CVFEM():
 
                 self._domainfile << (domains, t)
                 self._boundaryfile << (boundaries, t)
-
                 self._materialfile << (materials, t)
 
+                progress.update_state(state="PROGRESS",  meta={'iteration': numerator, 'fill_time': t, 'percent':(t/self._TEND)})
