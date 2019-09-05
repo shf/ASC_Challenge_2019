@@ -7,14 +7,18 @@
 <li class="nav-item">
     <a class="nav-link" href="../meshupload" data-toggle="collapse" data-target="#collapse_mesh" aria-expanded="true"
         aria-controls="collapse_mesh">
-        <i class="fas fa-cubes"></i><span>&nbsp;&nbsp;Mesh</span> 
+        <i class="fas fa-cubes"></i><span>&nbsp;&nbsp;Mesh</span>
     </a>
     {{ page|get_show:'mesh'|safe }}
     <div class="bg-white py-2 collapse-inner rounded">
         {% if mesh.name|length > 0 %}
-        <a href="../meshdisplay">
-            <h6 class="text-center">{{mesh.name}}</h6>
-        </a>
+        <div class="d-flex justify-content-center">
+            <div class="p-2 ">
+                <a href="../meshdisplay">
+                    {{mesh.name}}
+                </a>
+            </div>
+        </div>
         {% else %}
         <h5 class="text-center">Empty</h5>
         {% endif %}
@@ -27,12 +31,14 @@
     {{ page|get_active:'resin'|safe }}
     <a class="nav-link" href="#" data-toggle="collapse" data-target="#collapse_resin" aria-expanded="true"
         aria-controls="collapse_resin">
-        <i class="fas fa-tint"></i><span>&nbsp;&nbsp;Resin</span> 
+        <i class="fas fa-tint"></i><span>&nbsp;&nbsp;Resin</span>
     </a>
     {{ page|get_show:'resin'|safe }}
     <div class="bg-white py-2 collapse-inner rounded">
         {% if resin.name|length > 0 %}
-        <h6 class="text-center">{{resin.name}}</h6>
+        <a href="../resin">
+            <h6 class="text-center">{{resin.name}}</h6>
+        </a>
         {% else %}
         <h5 class="text-center">Empty</h5>
         {% endif %}
@@ -46,10 +52,13 @@
     {{ page|get_active:'preform'|safe }}
     <a class="nav-link" href="#" data-toggle="collapse" data-target="#collapse_preform" aria-expanded="true"
         aria-controls="collapse_preform">
-        <i class="fas fa-layer-group"></i><span>&nbsp;&nbsp;Preform</span> 
+        <i class="fas fa-layer-group"></i><span>&nbsp;&nbsp;Preform</span>
     </a>
     {{ page|get_show:'preform'|safe }}
     <div class="bg-white py-2 collapse-inner rounded">
+        <div class="d-flex justify-content-center">
+            <a class="btn btn-secondary" href="../preform" role="button">Modify Preforms</a>
+        </div>
         {% if preforms|length > 0 %}
         {% for r in preforms %}
         <div class="d-flex">
@@ -70,10 +79,13 @@
     {{ page|get_active:'section'|safe }}
     <a class="nav-link" href="#" data-toggle="collapse" data-target="#collapse_section" aria-expanded="true"
         aria-controls="collapse_section">
-        <i class="fas fa-puzzle-piece"></i><span>&nbsp;&nbsp;Section</span> 
+        <i class="fas fa-puzzle-piece"></i><span>&nbsp;&nbsp;Section</span>
     </a>
     {{ page|get_show:'section'|safe }}
     <div class="bg-white py-2 collapse-inner rounded">
+        <div class="d-flex justify-content-center">
+            <a class="btn btn-secondary" href="../preform" role="button">Modify Sections</a>
+        </div>
         {% if sections|length > 0 %}
         {% for r in sections %}
         <div class="d-flex">
@@ -98,6 +110,9 @@
     </a>
     {{ page|get_show:'bc'|safe }}
     <div class="bg-white py-2 collapse-inner rounded">
+        <div class="d-flex justify-content-center">
+            <a class="btn btn-secondary" href="../preform" role="button">Modify BCs</a>
+        </div>
         {% if bc|length > 0 %}
         {% for r in bc %}
         <div class="d-flex">
@@ -123,7 +138,13 @@
     {{ page|get_show:'step'|safe }}
     <div class="bg-white py-2 collapse-inner rounded">
         {% if step.name|length > 0 %}
-        <h5 class="text-center">{{step.name}}</h5>
+        <div class="d-flex justify-content-center">
+            <div class="p-2 ">
+                <a href="../step">
+                    {{step.name}}
+                </a>
+            </div>
+        </div>
         {% else %}
         <h5 class="text-center">Empty</h5>
         {% endif %}

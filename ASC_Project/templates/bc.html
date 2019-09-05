@@ -56,8 +56,13 @@ Boundary conditions
           <tr>
             <td>{{r.name}}</td>
             <td>{{r.typ}}</td>
+            {% if r.typ == 'Wall' %}
+            <td>-</td>
+            <td>-</td>
+            {% else %}
             <td>{{r.condition}}</td>
             <td>{{r.value}}</td>
+            {%endif%}
           </tr>
           {% endfor %}
         </tbody>

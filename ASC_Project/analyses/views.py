@@ -194,9 +194,9 @@ def mesh_page(request, slug):
     if request.method == 'POST':
         form = NewMeshForm(request.POST, request.FILES)
         if form.is_valid():
-            mesh = form.cleaned_data
-            mesh['analysis_id'] = analysis.id
-            Mesh.objects.update_or_create(mesh, analysis=analysis)
+            MeshFile = form.cleaned_data
+            MeshFile['analysis_id'] = analysis.id
+            Mesh.objects.update_or_create(MeshFile, analysis=analysis)
             mesh = get_object_or_404(Mesh, analysis_id=analysis.id)
 
             # mesh name from file name
@@ -384,10 +384,9 @@ def step_page(request, slug):
     if request.method == 'POST':
         form = NewStepForm(request.POST, initial={'name': "Step_1"})
         if form.is_valid():
-            step = form.save(commit=False)
-            step.analysis = analysis
-            step.save()
-
+            step = form.cleaned_data
+            step['analysis_id'] = analysis.id
+            Step.objects.update_or_create(step, analysis=analysis)
             return redirect('submit', slug=analysis.name)
     else:
         form = NewStepForm(initial={'name': "Step_1"})
@@ -451,13 +450,13 @@ def result_page(request, slug):
     # kill previously run server
     # this allows for just one concurrent result,
     subprocess.call(['killall', 'pvpython'])
-    time.sleep(2)
     os.system('rm -f {}/ParaView-5.7.0/viz-logs/*.txt'.format(directory))
     # run new server with modified configuration
     p = subprocess.Popen([directory + '/ParaView-5.7.0/bin/pvpython',
                           directory + '/ParaView-5.7.0/lib/python3.7/site-packages/wslink/launcher.py',
                           directory + '/ParaView-5.7.0/launcher.config'],
                          )
+    time.sleep(2)
     # save the process id to database, might be useful for concurrent visulization
     analysis.results.processID = p.pid
     analysis.results.save()
