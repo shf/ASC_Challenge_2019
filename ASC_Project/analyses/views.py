@@ -12,7 +12,7 @@ from celery.task.control import revoke
 from django.conf import settings
 from django.contrib import messages
 from django.core.files.storage import FileSystemStorage
-from django.http import HttpResponse
+from django.http import HttpResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaulttags import register
 
@@ -21,7 +21,7 @@ from .forms import (JobSubmitForm, MeshConfirmationForm, NewAnalysisForm,
                     NewSectionForm, NewStepForm, ResultsForm, StatusForm)
 from .models import (BC, Analysis, Connectivity, Mesh, Nodes, Preform, Resin,
                      Results, Section, Step)
-from .solver.Analysis_solver import solve_darcy
+from .solver.Analysis_solver import solve_darcy, print_conf, create_conf
 from .solver.Importers import Contour, MeshImport
 
 
@@ -398,10 +398,39 @@ def submit_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     if request.method == 'POST':
         form = JobSubmitForm(request.POST)
-        solver = solve_darcy.delay(analysis.id)
-        Results.objects.update_or_create(analysis=analysis)
-        Results.objects.filter(analysis=analysis).update(processID=solver.id)
-        return redirect('status', slug=analysis.name)
+        if form.is_valid():
+            val = form.cleaned_data
+            if val['btn'] == 'submit':
+                solver = solve_darcy.delay(analysis.id)
+                Results.objects.update_or_create(analysis=analysis)
+                Results.objects.filter(analysis=analysis).update(processID=solver.id)
+                return redirect('status', slug=analysis.name)
+            elif val['btn'] == 'download_conf':
+                InputData = create_conf(analysis.id)
+                print_conf(InputData)
+                file_path = os.path.join(settings.MEDIA_ROOT, str(analysis.id), 'results', 'config.dat')
+                if os.path.exists(file_path):
+                    with open(file_path, 'rb') as fh:
+                        response = HttpResponse(fh.read(), content_type="xml")
+                        response['Content-Disposition'] = 'inline; filename=' + os.path.basename(file_path)
+                        return response
+                raise Http404
+            elif val['btn'] == 'download_UNV':
+                file_path = os.path.join(settings.MEDIA_ROOT, str(analysis.mesh.address))
+                if os.path.exists(file_path):
+                    with open(file_path, 'rb') as fh:
+                        response = HttpResponse(fh.read(), content_type="xml")
+                        response['Content-Disposition'] = 'inline; filename=' + os.path.basename(file_path)
+                        return response
+                raise Http404
+            elif val['btn'] == 'download_XML':
+                file_path = os.path.join(settings.MEDIA_ROOT, str(analysis.id), 'mesh.xml')
+                if os.path.exists(file_path):
+                    with open(file_path, 'rb') as fh:
+                        response = HttpResponse(fh.read(), content_type="xml")
+                        response['Content-Disposition'] = 'inline; filename=' + os.path.basename(file_path)
+                        return response
+                raise Http404
     else:
         form = JobSubmitForm()
     Page = SideBarPage().DicUpdate("submit")

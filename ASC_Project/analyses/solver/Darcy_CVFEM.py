@@ -127,11 +127,13 @@ class Darcy_CVFEM():
                 self._k_global[i] = np.zeros((3, 3))
                 for cell in fe.cells(fe.MeshEntity(self._mesh, self._mesh.topology().dim(), i)):
                     v1_u = np.array([cell.cell_normal().x(), cell.cell_normal().y(), cell.cell_normal().z()])
-                    v2_u = np.array([1, 0, 0])
+                    v2_u = np.array([0, 0, 1])
                     theta = np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
                     k_local = np.array([[self._k[self._materials[i]][0][0], self._k[self._materials[i]][0][1], 0.0], 
                                         [self._k[self._materials[i]][1][0], self._k[self._materials[i]][1][1], 0.0], 
                                         [0.0, 0.0, 0.0]])
+                    
+                    
 
                     T = np.array([[np.cos(theta)*np.cos(theta), np.sin(theta)*np.sin(theta), 2.0*np.sin(theta)*np.cos(theta)], 
                                 [np.sin(theta)*np.sin(theta), np.cos(theta)*np.cos(theta), -2.0*np.sin(theta)*np.cos(theta)],  

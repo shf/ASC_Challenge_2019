@@ -26,7 +26,11 @@ Submit job
       </tr>
       <tr>
         <td class="align-middle">Mesh</td>
-        <td class="align-middle">{{ mesh.name }}</td>
+        <td class="align-middle">
+          {{ mesh.name }} &nbsp; &nbsp;
+          <button type="submit" class="btn btn-success" name="btn" value="download_UNV">Download UNV</button>
+          <button type="submit" class="btn btn-success" name="btn" value="download_XML">Download XML</button>
+        </td>
       </tr>
       <tr>
         <td class="align-middle">Resin</td>
@@ -73,7 +77,7 @@ Submit job
       </tr>
     </tbody>
   </table>
-
-  <button type="submit" class="btn btn-success">Submit job</button>
+  <button type="submit" class="btn btn-success" name="btn" value="download_conf">Download Configuration File</button>
+  <button type="submit" class="btn btn-success" name="btn" value="submit">Submit job</button>
 </form>
 {% endblock %}

@@ -14,10 +14,30 @@
 
 {% block content %}
 
+<h6 class="text-secondary">
+    Create a step:
+    <br>
+</h6>
+
 <form method="post" validate>
   {% csrf_token %}  
   {% include 'includes/form.html' %}
   <button type="submit" class="btn btn-success">Create</button>
 </form>
+
+<script>
+    // Ideally this script (javascript code) would be in the HEAD of your page
+    // but if you put it at the bottom of the body (bottom of your template) that should be ok too.
+    // Also you need jQuery loaded but since you are using bootstrap that should
+    // be taken care of.  If not, you will have to deal with that.
+  
+    // this is executed once when the page loads
+    $(document).ready(function () {
+      // set things up so my function will be called when typ changes
+      $('#timescaling').hide();
+      $('#fillthreshold').hide();
+
+    });
+</script>
 
 {% endblock %}
