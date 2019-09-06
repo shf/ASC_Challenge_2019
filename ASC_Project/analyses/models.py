@@ -20,7 +20,7 @@ class Analysis(models.Model):
 class Mesh(models.Model):
     name = models.CharField(max_length= 100, default="_None")
     analysis = models.OneToOneField(Analysis, related_name='mesh', on_delete=models.CASCADE)
-    address = models.FileField(upload_to=analysis_directory_path)
+    address = models.FileField(upload_to=analysis_directory_path, help_text='The layout should be primarily in x-y plane.')
     NumFaces = models.IntegerField(default=1)
     NumEdges = models.IntegerField(default=1)
 
@@ -75,7 +75,7 @@ class Preform(models.Model):
 class Section(models.Model):
     name = models.CharField(max_length=30)
     preform = models.ForeignKey(Preform, related_name='preform', on_delete=models.SET_NULL, null=True)
-    rotate = models.FloatField(default=0, help_text='Degree of rotation')
+    rotate = models.FloatField(default=0, help_text='Degree of rotation of 1st axis with respect to x axis')
     analysis = models.ForeignKey(Analysis, related_name='section', on_delete=models.CASCADE)
 
     def __str__(self):

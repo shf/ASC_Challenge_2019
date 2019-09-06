@@ -95,6 +95,7 @@ class Darcy_CVFEM():
         self._k = {}
         self._h = np.zeros(self._num_nodes)
         self._phi = np.zeros(self._num_nodes)
+        self._k_global = {}
         self._message_file.write("Creating Sections ... \n")
 
         for i in _sections:
@@ -117,38 +118,58 @@ class Darcy_CVFEM():
                     if all(item in _sections[i]['nodes'] for item in entity):
                         self._materials[cell.index()] = _sections[i]['marker'] 
 
+        if self._dim == 2:
+            for i in range(self._num_cells):
+                self._k_global[i] = np.array([self._k[self._materials[i]][0][0], self._k[self._materials[i]][0][1]], 
+                                            [self._k[self._materials[i]][1][0], self._k[self._materials[i]][1][1]])
+        if self._dim == 3:
+            for i in range(self._num_cells):
+                self._k_global[i] = np.zeros((3, 3))
+                for cell in fe.cells(fe.MeshEntity(self._mesh, self._mesh.topology().dim(), i)):
+                    v1_u = np.array([cell.cell_normal().x(), cell.cell_normal().y(), cell.cell_normal().z()])
+                    v2_u = np.array([1, 0, 0])
+                    theta = np.arccos(np.clip(np.dot(v1_u, v2_u), -1.0, 1.0))
+                    k_local = np.array([[self._k[self._materials[i]][0][0], self._k[self._materials[i]][0][1], 0.0], 
+                                        [self._k[self._materials[i]][1][0], self._k[self._materials[i]][1][1], 0.0], 
+                                        [0.0, 0.0, 0.0]])
+
+                    T = np.array([[np.cos(theta)*np.cos(theta), np.sin(theta)*np.sin(theta), 2.0*np.sin(theta)*np.cos(theta)], 
+                                [np.sin(theta)*np.sin(theta), np.cos(theta)*np.cos(theta), -2.0*np.sin(theta)*np.cos(theta)],  
+                                [-np.sin(theta)*np.cos(theta), np.sin(theta)*np.cos(theta), np.cos(theta)*np.cos(theta) - np.sin(theta)*np.sin(theta)]])
+                    
+                self._k_global[i] = T*k_local
+                
         class Permeability(fe.UserExpression):
             def __init__(self, materials, k, dim, **kwargs):
                 self.__materials = materials
-                self.__k = k
+                self.__k_global = k
                 self.__dim = dim
                 super().__init__(**kwargs)
         
             def eval_cell(self, values, x, ufc_cell):
                 if self.__dim == 2:
-                    values[0] = self.__k[self.__materials[ufc_cell.index]][0][0]
-                    values[1] = self.__k[self.__materials[ufc_cell.index]][0][1]
-                    values[2] = self.__k[self.__materials[ufc_cell.index]][1][0]
-                    values[3] = self.__k[self.__materials[ufc_cell.index]][1][1]
+                    values[0] = self.__k_global[ufc_cell.index][0][0]
+                    values[1] = self.__k_global[ufc_cell.index][0][1]
+                    values[2] = self.__k_global[ufc_cell.index][1][0]
+                    values[3] = self.__k_global[ufc_cell.index][1][1]
                 elif self.__dim == 3:
-                    values[0] = self.__k[self.__materials[ufc_cell.index]][0][0]
-                    values[1] = self.__k[self.__materials[ufc_cell.index]][0][1]
-                    values[2] = 0.0
-                    values[3] = self.__k[self.__materials[ufc_cell.index]][1][0]
-                    values[4] = self.__k[self.__materials[ufc_cell.index]][1][1]
-                    values[5] = 0.0
-                    values[6] = 0.0
-                    values[7] = 0.0
-                    values[8] = 0.0
+                    values[0] = self.__k_global[ufc_cell.index][0][0]
+                    values[1] = self.__k_global[ufc_cell.index][0][1]
+                    values[2] = self.__k_global[ufc_cell.index][0][2]
+                    values[3] = self.__k_global[ufc_cell.index][1][0]
+                    values[4] = self.__k_global[ufc_cell.index][1][1]
+                    values[5] = self.__k_global[ufc_cell.index][1][2]
+                    values[6] = self.__k_global[ufc_cell.index][2][0]
+                    values[7] = self.__k_global[ufc_cell.index][2][1]
+                    values[8] = self.__k_global[ufc_cell.index][2][2]
             def value_shape(self):
                 if self.__dim == 2:
                     return (2, 2)
                 elif self.__dim == 3:
                     return (3, 3)
 
-        self._k_exp = Permeability(self._materials, self._k, self._dim, degree=1)
+        self._k_exp = Permeability(self._materials, self._k_global, self._dim, degree=1)
 
-        
         v2d = fe.vertex_to_dof_map(self._QQ)
         self._h_exp = fe.Function(self._QQ)
         self._h_exp.rename("Thickness", "")
@@ -179,6 +200,7 @@ class Darcy_CVFEM():
         self._coords = self._mesh.coordinates() # coordination of vertices
         self._dim = np.shape(self._coords)[1]
         self._num_nodes = self._mesh.num_vertices() # number of vertices
+        self._num_cells = self._mesh.num_cells() # number of cells
 
         # Create the markers
         self._BoundaryEdges = fe.BoundaryMesh(self._mesh, 'exterior').entity_map(1).array()
