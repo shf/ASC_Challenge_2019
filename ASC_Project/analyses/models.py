@@ -5,13 +5,15 @@ from .choice import TYPE_OF_ANALYSIS
 from .choice import TYPE_OF_BC
 from .choice import CONDITION_OF_BC
 
+from django.core.validators import FileExtensionValidator
+
 # this function defines a specific folder for the files required in analyses
 def analysis_directory_path(instance,filename):
     # file will be uploaded to MEDIA_ROOT/user_<id>/<filename>
     return '{}/{}'.format(instance.analysis.id,filename)
 
 class Analysis(models.Model):
-    name = models.CharField(max_length=30, unique=True, help_text='Name of analysis')
+    name = models.CharField(max_length=30, unique=True, help_text='Name of analysis (do not use space)')
     description = models.CharField(max_length=200, help_text='Description')
 
     def __str__(self):
@@ -20,7 +22,8 @@ class Analysis(models.Model):
 class Mesh(models.Model):
     name = models.CharField(max_length= 100, default="_None")
     analysis = models.OneToOneField(Analysis, related_name='mesh', on_delete=models.CASCADE)
-    address = models.FileField(upload_to=analysis_directory_path, help_text='The layout should be primarily in x-y plane.')
+    address = models.FileField(upload_to=analysis_directory_path, help_text='The layout should be primarily in x-y plane.', 
+        validators=[FileExtensionValidator(allowed_extensions=['unv'])])
     NumFaces = models.IntegerField(default=1)
     NumEdges = models.IntegerField(default=1)
 

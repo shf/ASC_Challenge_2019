@@ -132,6 +132,8 @@ class Darcy_CVFEM():
                     k_local = np.array([[self._k[self._materials[i]][0][0], self._k[self._materials[i]][0][1], 0.0], 
                                         [self._k[self._materials[i]][1][0], self._k[self._materials[i]][1][1], 0.0], 
                                         [0.0, 0.0, 0.0]])
+                    
+                    
 
                     T = np.array([[np.cos(theta)*np.cos(theta), np.sin(theta)*np.sin(theta), 2.0*np.sin(theta)*np.cos(theta)], 
                                 [np.sin(theta)*np.sin(theta), np.cos(theta)*np.cos(theta), -2.0*np.sin(theta)*np.cos(theta)],  

@@ -1,4 +1,6 @@
 ## A routine for preparing mesh in SALOME
+
+Download the software at [SALOME Platform](https://www.salome-platform.org/) 
 ---
 - in the geometry module, import the geometry from file &rarr; import
 - create necessary guiding lines to create partitions

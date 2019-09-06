@@ -14,7 +14,6 @@
 Preform
 {% endblock %}
 
-
 {% block content %}
 
 <div class="container-fluid">
@@ -22,6 +21,15 @@ Preform
     <div class="col-4">
       <form method="post" validate>
         <h4>New preform:</h4>
+
+        <h6 class="text-secondary">
+            <br>
+            Create a new layer for each of your preforms. 
+            <br>
+            Assume the global X axis is the 1st principal direction.
+            <br>
+        </h6>
+
         <br>
         {% csrf_token %}
         {% include 'includes/form.html' %}

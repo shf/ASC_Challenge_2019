@@ -15,6 +15,26 @@
 
 {% block content %}
 
+<h6 class="text-secondary">
+    <br>
+    You can upload the mesh here.
+    <br>
+    Composites on Clouds currently support Universal Mesh (.unv) files. You can create them with SALOME, 
+    an open source plaftorm for numerical simulation. You should define different sections and node-groups in SALOME.
+    You can later use them to apply boundary conditions and section properties in Composites on Clouds.
+
+    <br>
+    <br>
+    Since the 1st principal coordinate is assumed to be in the X direction, the mesh should be created in X-Y plane, with height of the part in the Z direction.
+    <br>
+    <br>
+    More information about the steps to create the mesh, partitions, and group-sets can be found in SALOME Documentation.
+    <br>
+    <br>
+    Upload the mesh from your system:
+    <br>    
+  </h6>
+
 <form method="post" enctype="multipart/form-data">
     
     {% csrf_token %}  
@@ -23,4 +43,13 @@
     <button type="submit" class="btn btn-success">Upload</button>
 </form>
     
+<h6 class="text-secondary">
+  <br>
+  The uploaded mesh will be processed on the server.
+  <br>
+  <br>
+  Please wait for the browser to load the next webpade.
+  <br>
+</h6>
+
 {% endblock %}

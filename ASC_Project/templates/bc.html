@@ -16,6 +16,20 @@ Boundary conditions
 
 {% block content %}
 
+<h6 class="text-secondary">
+    Assign a boundary type to each edge.
+    Consider the following guideline for assigning boundary types:
+    <ul>
+        <li>You should assign at least one "Inlet" boundary.</li>
+        <li>You can enforce inlet boundaries with pressure or flow-rate.</li>
+        <li>Since flow front interact with zero gage pressure, the inlet and outlet pressures should be gage.</li>
+        <li>You may or may not assign an outlet boundary. Assigning outlet boundary is a challenge in mold-filling analysis, since dry
+          areas can remain after filling the outlet. You can enforce termination rules later.</li>
+        <li>The "Wall" boundaries do not let resin to move out of the system.</li>
+      </ul>
+    <br>
+</h6>
+
 <div class="container-fluid">
   {% if messages %}
   <div class="row">

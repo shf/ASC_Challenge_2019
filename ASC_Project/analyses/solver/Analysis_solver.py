@@ -6,23 +6,13 @@ from time import sleep
 import numpy as np
 from celery import shared_task
 
-@shared_task (bind=True)
-def solve_darcy(progress,_id):
+@shared_task
+def create_conf(_id):
     '''
     This function creates an instance for the Darcy_FEM solver class
     based on the database information 
     '''
-    """
-### ProgressBar
-    for i in range(100):
-        sleep(0.2)
-        self.update_state(state="PROGRESS",  meta={'current': i, 'total': 100, 'percent':i/100})
-        print(i)
-    self.update_state(state='COMPLETE',  meta={'current': i, 'total': 100, 'percent':i/100})
-    """
     _analysis = Analysis.objects.get(id=_id)
-    resin = _analysis.resin
-    viscosity = resin.viscosity
 
     FaceList = {}
     for item in Nodes.objects.filter(mesh_id=_analysis.mesh).values():
@@ -64,7 +54,8 @@ def solve_darcy(progress,_id):
     }
 
     resin = {
-        'viscosity':viscosity
+        'resin_name': _analysis.resin.name,
+        'viscosity': _analysis.resin.viscosity
     }
     section_data = {}
     section_id = 1
@@ -149,6 +140,26 @@ def solve_darcy(progress,_id):
 #        'output':Output
     }
 
+    return InputData
+
+@shared_task
+def print_conf(InputData):
+    _data_handling = InputData['analysis']
+    _directory = _data_handling['folder_address'] + "/results/"
+    _message_file = open(_directory + "config.dat", "w")
+
+    _message_file.write(" -- Configuration file -- \n")
+    _message_file.write(" -- Created by Composites on Clouds -- \n")
+
+    _message_file.write("Resin: " + str(InputData['resin']['resin_name']) + "\n")
+    _message_file.write("    viscosity: " + str(InputData['resin']['viscosity']) + "\n")
+
+    _message_file.write(" -- End of analysis configuration file --  \n")
+
+@shared_task (bind=True)
+def solve_darcy(progress,_id):
+    InputData = create_conf(_id)
+    print_conf(InputData)
     problem=Darcy_CVFEM(InputData)
-    problem.solve(progress) 
+    problem.solve(progress)
 
