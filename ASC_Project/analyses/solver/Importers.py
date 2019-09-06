@@ -116,7 +116,7 @@ class MeshImport():
                             break
         for key in _Faces.keys():
             del _groups[key]
-        _groups.pop('', None)
+
         for key, value in _Faces.items():
             _Faces[key]=list(map(int, value))
 
