@@ -16,7 +16,7 @@ from django.http import HttpResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaulttags import register
 
-from .forms import (JobSubmitForm, MeshConfirmationForm, NewAnalysisForm,
+from .forms import (StartApp, JobSubmitForm, MeshConfirmationForm, NewAnalysisForm,
                     NewBCForm, NewMeshForm, NewPreformForm, NewResinForm,
                     NewSectionForm, NewStepForm, ResultsForm, StatusForm)
 from .models import (BC, Analysis, Connectivity, Mesh, Nodes, Preform, Resin,
@@ -101,7 +101,7 @@ def PlotlyPlot(nodes, table, intensity):
                 ),
                 aspectmode='data',
                 camera=dict(
-                    eye=dict(x=2,y=2,z=2)
+                    eye=dict(x=2, y=2, z=2)
                 )
             ),
     )
@@ -175,6 +175,19 @@ def PageVariables(Page, form, analysis):
 
 
 def home(request):
+    if request.method == 'POST':
+        form = StartApp(request.POST)
+        if form.is_valid():
+            val=form.cleaned_data
+            if val['btn'] == 'run':
+                return redirect('apphome')
+            elif val['btn'] == 'docs':
+                return redirect("https://github.com/shf/ASC_Challenge/wiki")
+    else:
+        form = StartApp()
+    return render(request, 'home.html')
+
+def apphome(request):
     analysis = Analysis.objects.all()
     if request.method == 'POST':
         form = NewAnalysisForm(request.POST, initial={'name': "Analysis_1"})
@@ -186,8 +199,7 @@ def home(request):
     else:
         form = NewAnalysisForm(initial={'name': "Analysis_1"})
     Page = SideBarPage().DicUpdate("")
-    return render(request, 'home.html', {'page': Page, 'form': form})
-
+    return render(request, 'apphome.html', {'page': Page, 'form': form})
 
 def mesh_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
@@ -263,15 +275,22 @@ def display_mesh(request, slug):
 
 def resin_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
+    
+    if Resin.objects.filter(analysis_id=analysis.id).exists():
+        init = list(Resin.objects.filter(
+            analysis_id=analysis.id).values())[0]
+    else:
+        init={'name':'Resin_1', 'viscosity':0.02}
     if request.method == 'POST':
-        form = NewResinForm(request.POST, initial={'name': "Resin_1"})
+        
+        form = NewResinForm(request.POST, initial=init)
         if form.is_valid():
             resin = form.cleaned_data
             resin['analysis_id'] = analysis.id
             Resin.objects.update_or_create(resin, analysis=analysis)
             return redirect('preform', slug=analysis.name)
     else:
-        form = NewResinForm(initial={'name': "Resin_1"})
+        form = NewResinForm(initial=init)
     Page = SideBarPage().DicUpdate("resin")
     return render(request, 'resin.html', PageVariables(Page, form, analysis))
 
@@ -381,15 +400,20 @@ def bc_page(request, slug):
 
 def step_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
+    if Step.objects.filter(analysis_id=analysis.id).exists():
+        init = list(Step.objects.filter(
+            analysis_id=analysis.id).values())[0]
+    else:
+        init={'name': "Step_1"}
     if request.method == 'POST':
-        form = NewStepForm(request.POST, initial={'name': "Step_1"})
+        form = NewStepForm(request.POST, initial=init)
         if form.is_valid():
             step = form.cleaned_data
             step['analysis_id'] = analysis.id
             Step.objects.update_or_create(step, analysis=analysis)
             return redirect('submit', slug=analysis.name)
     else:
-        form = NewStepForm(initial={'name': "Step_1"})
+        form = NewStepForm(initial=init)
     Page = SideBarPage().DicUpdate("step")
     return render(request, 'step.html', PageVariables(Page, form, analysis))
 

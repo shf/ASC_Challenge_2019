@@ -35,43 +35,83 @@ Submit job
       <tr>
         <td class="align-middle">Resin</td>
         <td class="align-middle">
-          {{ resin.name }}.Viscosity: {{ resin.viscosity }}
+          Viscosity: {{ resin.viscosity }}
         </td>
       </tr>
       <tr>
         <td class="align-middle">Preforms</td>
         <td class="align-middle">
+          <div class="d-flex bd-highlight">
+            <div class="w-25 p-0 flex-fill bd-highlight font-weight-bold">Name</div>
+            <div class="w-25 p-0 flex-fill bd-highlight font-weight-bold">Thickness</div>
+            <div class="w-25 p-0 flex-fill bd-highlight font-weight-bold">K11</div>
+            <div class="w-25 p-0 flex-fill bd-highlight font-weight-bold">K12</div>
+            <div class="w-25 p-0 flex-fill bd-highlight font-weight-bold">K22</div>
+          </div>
           {% for preform in preforms %}
-          {{ preform.name }}.thickness: {{ preform.thickness }}<br>
-          {{ preform.name }}.K11: {{ preform.K11 }}<br>
-          {{ preform.name }}.K12: {{ preform.K12 }}<br>
-          {{ preform.name }}.K22: {{ preform.K22 }}<br>
+          <div class="d-flex bd-highlight">
+            <div class="w-25 p-0 flex-fill bd-highlight">{{ preform.name }}</div>
+            <div class="w-25 p-0 flex-fill bd-highlight">{{ preform.thickness }}</div>
+            <div class="w-25 p-0 flex-fill bd-highlight">{{ preform.K11 }}</div>
+            <div class="w-25 p-0 flex-fill bd-highlight">{{ preform.K12 }}</div>
+            <div class="w-25 p-0 flex-fill bd-highlight">{{ preform.K22 }}</div>
+          </div>
           {% endfor %}
         </td>
       </tr>
       <tr>
         <td class="align-middle">Sections</td>
         <td class="align-middle">
+          <div class="d-flex bd-highlight">
+            <div class="w-25 p-0 flex-fill bd-highlight font-weight-bold">Name</div>
+            <div class="w-25 p-0 flex-fill bd-highlight font-weight-bold">Preform</div>
+            <div class="w-25 p-0 flex-fill bd-highlight font-weight-bold">Rotation</div>
+          </div>
           {% for section in sections %}
-          {{ section.name }}.preform: {{ section.preform.name }}<br>
-          {{ section.name }}.rotate: {{ section.rotate }}<br>
+          <div class="d-flex bd-highlight">
+            <div class="w-25 p-0 flex-fill bd-highlight">{{ section.name }}</div>
+            <div class="w-25 p-0 flex-fill bd-highlight">{{ section.preform.name }}</div>
+            <div class="w-25 p-0 flex-fill bd-highlight">{{ section.rotate }}</div>
+          </div>
           {% endfor %}
         </td>
       </tr>
       <tr>
         <td class="align-middle">Step</td>
         <td class="align-middle">
-          {{ step.name }}.type: {{ step.typ }}<br>
-          {{ step.name }}.End time: {{ step.endtime }}<br>
+          <div class="d-flex bd-highlight">
+            <div class="w-25 p-0 flex-fill bd-highlight font-weight-bold">Name</div>
+            <div class="w-25 p-0 flex-fill bd-highlight font-weight-bold">Type</div>
+            <div class="w-25 p-0 flex-fill bd-highlight font-weight-bold">End time</div>
+          </div>
+          <div class="d-flex bd-highlight">
+            <div class="w-25 p-0 flex-fill bd-highlight">{{ step.name }}</div>
+            <div class="w-25 p-0 flex-fill bd-highlight">{{ step.typ }}</div>
+            <div class="w-25 p-0 flex-fill bd-highlight">{{ step.endtime }}</div>
+          </div>
         </td>
       </tr>
       <tr>
         <td class="align-middle">Boundary Conditions</td>
         <td class="align-middle">
+          <div class="d-flex bd-highlight">
+            <div class="w-25 p-0 flex-fill bd-highlight font-weight-bold">Edge</div>
+            <div class="w-25 p-0 flex-fill bd-highlight font-weight-bold">Type</div>
+            <div class="w-25 p-0 flex-fill bd-highlight font-weight-bold">Condition</div>
+            <div class="w-25 p-0 flex-fill bd-highlight font-weight-bold">Value</div>
+          </div>
           {% for bc in bc %}
-          {{ bc.name }}.type: {{ bc.typ }}<br>
-          {{ bc.name }}.condition: {{ bc.condition }}<br>
-          {{ bc.name }}.value: {{ bc.value }}<br>
+          <div class="d-flex bd-highlight">
+            <div class="w-25 p-0 flex-fill bd-highlight">{{ bc.name }}</div>
+            <div class="w-25 p-0 flex-fill bd-highlight">{{ bc.typ }}</div>
+            {% if bc.typ == 'Wall' %}
+            <div class="w-25 p-0 flex-fill bd-highlight">&emsp;&emsp; -</div>
+            <div class="w-25 p-0 flex-fill bd-highlight">&emsp;-</div>
+            {% else %}
+            <div class="w-25 p-0 flex-fill bd-highlight">{{ bc.condition }}</div>
+            <div class="w-25 p-0 flex-fill bd-highlight">{{ bc.value }}</div>
+            {%endif%}
+          </div>
           {% endfor %}
         </td>
       </tr>

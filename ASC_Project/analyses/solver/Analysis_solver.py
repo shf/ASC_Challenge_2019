@@ -145,8 +145,9 @@ def create_conf(_id):
 @shared_task
 def print_conf(InputData):
     _data_handling = InputData['analysis']
-    _directory = _data_handling['folder_address'] + "/results/"
-    _message_file = open(_directory + "config.dat", "w")
+    _directory = _data_handling['folder_address'] 
+    print(_directory + "config.dat")
+    _message_file = open(_directory + "config.dat", "w+")
 
     _message_file.write(" -- Configuration file -- \n")
     _message_file.write(" -- Created by Composites on Clouds -- \n")

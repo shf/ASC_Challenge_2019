@@ -4,9 +4,9 @@ TYPE_OF_ANALYSIS = (
 )
 
 TYPE_OF_BC = (
+    ('Wall',  'Wall'),
     ('Inlet', 'Inlet'), 
     ('Outlet', 'Outlet'),
-    ('Wall',  'Wall')
 )
 
 CONDITION_OF_BC = (

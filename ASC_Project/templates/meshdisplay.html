@@ -15,11 +15,11 @@ Mesh
 
 {% block content %}
 
-<h6 class="text-secondary">
+<!-- <h6 class="text-secondary">
     <br> 
     The mesh has been processed and is shown below:
     <br>
-  </h6>
+  </h6> -->
 
 <div class="row">
   <div class="col-9">
@@ -62,11 +62,11 @@ Mesh
   </div>
   <div class="col-4">
     <form method="post" validate>
-      <h6 class="text-secondary">
+      <!-- <h6 class="text-secondary">
         <br>
         Confirm if the mesh is correct and the created Edges and Faces are shown in the table.
         <br>
-      </h6>
+      </h6> -->
 
       {% csrf_token %}
       {% include 'includes/form.html' %}

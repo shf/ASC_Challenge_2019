@@ -26,6 +26,7 @@ from analyses import views
 urlpatterns = [
     path('', views.home, name='home'),
     path('admin/', admin.site.urls),
+    path('application/', views.apphome, name='apphome'),
     path('<slug:slug>/meshupload/', views.mesh_page, name='meshupload'),
     path('<slug:slug>/meshdisplay/', views.display_mesh, name='meshdisplay'),
     path('<slug:slug>/resin/', views.resin_page, name='resin'),
