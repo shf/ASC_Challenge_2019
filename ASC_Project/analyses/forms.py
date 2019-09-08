@@ -13,6 +13,9 @@ from .choice import TYPE_OF_BC
 from .choice import CONDITION_OF_BC
 from .choice import BINARY_CHOICES
 
+class StartApp(forms.Form):
+    btn = forms.CharField(label='', widget=forms.HiddenInput())
+
 class NewAnalysisForm(forms.ModelForm):
     class Meta:
         model = Analysis

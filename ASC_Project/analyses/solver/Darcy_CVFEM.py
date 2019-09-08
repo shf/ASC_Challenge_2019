@@ -546,7 +546,6 @@ class Darcy_CVFEM():
                                 dt = min(dt, (1 - S[v_i])*(cell_voll[v_i])/abs(flux))
 
         dt = self._t_scaling*dt
-
         ################## SOLVING IN TIME ##################################
         while (t < fe.DOLFIN_EPS + self._TEND):
 
@@ -588,7 +587,6 @@ class Darcy_CVFEM():
 
             # Finding dt to fill just one control volueme
             dt_new = dt
-
             max_s = max(S + delta_S)
 
             if max_s > 1:

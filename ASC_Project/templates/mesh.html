@@ -1,55 +1,64 @@
 {% extends 'BaseSidebar.html' %}
 
 {% block title %}
-  {{ analysis.name }} - {{ block.super }}
+{{ analysis.name }} - {{ block.super }}
 {% endblock %}
 
 {% block Analysis %}
-  {{ analysis.name }}
+{{ analysis.name }}
 {% endblock %}
 
 
 {% block PageName %}
-  Mesh
+Mesh
 {% endblock %}
 
 {% block content %}
 
 <h6 class="text-secondary">
-    <br>
-    You can upload the mesh here.
-    <br>
-    Composites on Clouds currently support Universal Mesh (.unv) files. You can create them with SALOME, 
-    an open source plaftorm for numerical simulation. You should define different sections and node-groups in SALOME.
-    You can later use them to apply boundary conditions and section properties in Composites on Clouds.
-
-    <br>
-    <br>
-    Since the 1st principal coordinate is assumed to be in the X direction, the mesh should be created in X-Y plane, with height of the part in the Z direction.
-    <br>
-    <br>
-    More information about the steps to create the mesh, partitions, and group-sets can be found in SALOME Documentation.
-    <br>
-    <br>
-    Upload the mesh from your system:
-    <br>    
-  </h6>
-
-<form method="post" enctype="multipart/form-data">
-    
-    {% csrf_token %}  
-    {% include 'includes/form.html' %}
-
-    <button type="submit" class="btn btn-success">Upload</button>
-</form>
-    
-<h6 class="text-secondary">
   <br>
-  The uploaded mesh will be processed on the server.
+  You can upload the mesh here.
+  <br>
+  Composites on Clouds currently support Universal Mesh (.unv) files. You can create them with SALOME,
+  an open source plaftorm for numerical simulation. You should define different sections and node-groups in SALOME.
+  You can later use them to apply boundary conditions and section properties in Composites on Clouds.
+
   <br>
   <br>
-  Please wait for the browser to load the next webpade.
+  Since the 1st principal coordinate is assumed to be in the X direction, the mesh should be created in X-Y plane, with
+  height of the part in the Z direction.
+  <br>
+  <br>
+  More information about the steps to create the mesh, partitions, and group-sets can be found in SALOME Documentation.
+  <br>
+  <br>
+  Upload the mesh from your system:
   <br>
 </h6>
+
+<form id="UploadForm" method="post" enctype="multipart/form-data">
+
+  {% csrf_token %}
+  {% include 'includes/form.html' %}
+
+  <button id="btnSubmit" type="submit" class="btn btn-success"><span class="ui-button-text">Upload</span></button>
+</form>
+<script>
+  // this is executed once when the page loads
+  $(document).ready(function () {
+
+    // check if the form is submitted
+    $("#btnSubmit").click(function () {
+
+      // submit the form
+      $("#UploadForm").submit();
+
+      //disable the submit button and show uploading animation
+      $("#btnSubmit").addClass('disabled');
+      $("#btnSubmit").attr("disabled", true);
+      $("#btnSubmit").html($('<i/>',{class:'fa fa-spinner fa-pulse'})).append(' Uploading');
+    });
+    });
+</script>
 
 {% endblock %}

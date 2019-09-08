@@ -1,0 +1,47 @@
+{% extends 'BaseSidebar.html' %}
+
+
+
+{% block title %}
+  {{ analysis.name }} - {{ block.super }}
+{% endblock %}
+
+{% block Analysis %}
+  {{ analysis.name }}
+{% endblock %}
+
+
+{% block PageName %}
+  Create new analysis:
+{% endblock %}
+
+{% block content %}
+
+<h6 class="text-secondary">
+  <br>
+  This wizard guides you to create a mold filling analysis in Composites on Clouds. <br>
+  While creating your analysis, please follow the following guidelines:
+  <ul>
+    <li>This platform has been designed and tested on Chrome Version 76.</li>
+    <li>Do not use the back and forward keys of your browser and use the links in the website to move to different forms.</li>
+    <li>Do not push bottons or navigate while your browser is waiting for a respond.</li>
+  </ul>
+  
+  <br>
+    
+  Set a name and description to create your analysis. <br>
+  You can later modify your analysis using the same name. <br>
+
+  <br>
+</h6>
+
+
+
+
+<form method="post" validate>
+    {% csrf_token %}  
+    {% include 'includes/form.html' %}
+    <button type="submit" class="btn btn-success">Create</button>
+</form>
+
+{% endblock %}
