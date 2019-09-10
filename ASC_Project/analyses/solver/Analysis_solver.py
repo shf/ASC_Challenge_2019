@@ -5,6 +5,8 @@ from ..models import (BC, Analysis, Connectivity, Mesh, Nodes, Preform, Resin,
 from time import sleep          
 import numpy as np
 from celery import shared_task
+import os
+import shelve as sh
 
 @shared_task
 def create_conf(_id):
@@ -49,8 +51,13 @@ def create_conf(_id):
             phi[section['name']] = phi[section['name']]/H[section['name']]
 
     analysis = {
+        'analysis_name': _analysis.name,
         'analysis_id':_analysis.id,
         'folder_address':("media/" + str(_analysis.id))
+    }
+
+    mesh = {
+        'mesh_name': _analysis.mesh.name
     }
 
     resin = {
@@ -131,6 +138,7 @@ def create_conf(_id):
 
     InputData = {
         'analysis': analysis,
+        'mesh': mesh,
         'resin':resin,
         'sections':section_data,
         'step':step_data,
@@ -144,18 +152,15 @@ def create_conf(_id):
 
 @shared_task
 def print_conf(InputData):
-    _data_handling = InputData['analysis']
-    _directory = _data_handling['folder_address'] 
-    print(_directory + "config.dat")
-    _message_file = open(_directory + "config.dat", "w+")
+    _directory = InputData['analysis']['folder_address'] + "/results/"
+    if not os.path.exists(_directory):
+            os.makedirs(_directory)
+    _message_file = sh.open(_directory + "/config.db", "c")
 
-    _message_file.write(" -- Configuration file -- \n")
-    _message_file.write(" -- Created by Composites on Clouds -- \n")
+    for key in InputData.keys():
+        _message_file[key] = InputData[key]
 
-    _message_file.write("Resin: " + str(InputData['resin']['resin_name']) + "\n")
-    _message_file.write("    viscosity: " + str(InputData['resin']['viscosity']) + "\n")
-
-    _message_file.write(" -- End of analysis configuration file --  \n")
+    _message_file.close()
 
 @shared_task (bind=True)
 def solve_darcy(progress,_id):

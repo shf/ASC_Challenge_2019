@@ -69,13 +69,13 @@ class NewStepForm(forms.ModelForm):
         fields = ['name', 'typ', 'endtime', 'outputstep', 'maxiterations', 'maxhaltsteps', 'minchangesaturation', 'minchangesaturation', 'timescaling', 'fillthreshold']
     
     typ = forms.ChoiceField(label='Termination type', choices=TYPE_OF_ANALYSIS, help_text='The analysis might terminate with unfilled region if you choose "Fill the outlet"')
-    endtime = forms.FloatField(label='End time', initial='1000', help_text='End time of analysis')
-    outputstep = forms.FloatField(label='Output time step', initial='0.01', help_text='Step size for writing output')
-    maxiterations = forms.IntegerField(label='Maximum iteration number', initial='10000', help_text='Maximum number of iterations')
-    maxhaltsteps = forms.IntegerField(label='Maximum idle iterations', initial='10', help_text='Maximum number of consequtive steps with no apparant change in saturation')
-    minchangesaturation = forms.FloatField(label='Minimum saturation change', initial='0.001', help_text='Minimum acceptable change of saturation')
-    timescaling = forms.FloatField(label='Time scaling factor', initial='5.0', help_text='Parameter to scale predicted filling time')
-    fillthreshold = forms.FloatField(label='Filling threshhold', initial='0.98', help_text='Threshold for counting filled CVs')
+    endtime = forms.FloatField(label='End time', help_text='End time of analysis')
+    outputstep = forms.FloatField(label='Output time step', help_text='Step size for writing output')
+    maxiterations = forms.IntegerField(label='Maximum iteration number', help_text='Maximum number of iterations')
+    maxhaltsteps = forms.IntegerField(label='Maximum idle iterations', help_text='Maximum number of consequtive steps with no apparant change in saturation')
+    minchangesaturation = forms.FloatField(label='Minimum saturation change', help_text='Minimum acceptable change of saturation')
+    timescaling = forms.FloatField(label='Time scaling factor', help_text='Parameter to scale predicted filling time')
+    fillthreshold = forms.FloatField(label='Filling threshhold', help_text='Threshold for counting filled CVs')
 
 
 class NewBCForm(forms.ModelForm):

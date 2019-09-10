@@ -56,7 +56,7 @@ class Connectivity(models.Model):
 
 class Resin(models.Model):
     name = models.CharField(max_length=30, help_text='Name of Resin')
-    viscosity = models.FloatField(default=0.02, help_text='Enter a number for viscosity')
+    viscosity = models.FloatField(help_text='Enter a number for viscosity')
     analysis = models.OneToOneField(Analysis, related_name='resin', on_delete=models.CASCADE)
 
     def __str__(self):
@@ -86,7 +86,7 @@ class Section(models.Model):
 
 class Step(models.Model):
     name = models.CharField(max_length=30)
-    typ = models.CharField(max_length=30, choices=TYPE_OF_ANALYSIS, default=0)
+    typ = models.CharField(max_length=30, choices=TYPE_OF_ANALYSIS)
     endtime = models.FloatField()
     outputstep = models.FloatField()
     maxiterations = models.IntegerField()
