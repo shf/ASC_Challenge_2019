@@ -349,17 +349,17 @@ def step_page(request, slug):
             analysis_id=analysis.id).values())[0]
     else:
         init={'name':'Step_1', 'typ':0, 'endtime':1000, 'outputstep':0.01, 
-            'maxiterations': 10000, 'maxhaltsteps':10, 'minchangesaturation':0.001, 
+            'maxiterations':10000, 'maxhaltsteps':10, 'minchangesaturation':0.001, 
             'timescaling':5.0, 'fillthreshold':0.98}
     if request.method == 'POST':
-        form = NewStepForm(request.POST)
+        form = NewStepForm(request.POST, initial=init)
         if form.is_valid():
             step = form.cleaned_data
             step['analysis_id'] = analysis.id
             Step.objects.update_or_create(step, analysis=analysis)
             return redirect('submit', slug=analysis.name)
     else:
-        form = NewStepForm(initial={'name': "Step_1"})
+        form = NewStepForm(initial=init)
     Page = SideBarPage().DicUpdate("step")
     return render(request, 'step.html', PageVariables(Page, form, analysis))
 
@@ -403,27 +403,6 @@ def bc_page(request, slug):
         form = NewBCForm(mesh=analysis.mesh)
     Page = SideBarPage().DicUpdate("bc")
     return render(request, 'bc.html', PageVariables(Page, form, analysis))
-
-
-def step_page(request, slug):
-    analysis = get_object_or_404(Analysis, name=slug)
-    if Step.objects.filter(analysis_id=analysis.id).exists():
-        init = list(Step.objects.filter(
-            analysis_id=analysis.id).values())[0]
-    else:
-        init={'name': "Step_1"}
-    if request.method == 'POST':
-        form = NewStepForm(request.POST, initial=init)
-        if form.is_valid():
-            step = form.cleaned_data
-            step['analysis_id'] = analysis.id
-            Step.objects.update_or_create(step, analysis=analysis)
-            return redirect('submit', slug=analysis.name)
-    else:
-        form = NewStepForm(initial=init)
-    Page = SideBarPage().DicUpdate("step")
-    return render(request, 'step.html', PageVariables(Page, form, analysis))
-
 
 def submit_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
