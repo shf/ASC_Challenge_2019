@@ -1,10 +1,6 @@
 # this is the instruction on setting up the apache and paraview servers
 ## 1. paraview:
-* download `ParaView-5.7.0-RC2-osmesa-MPI-Linux-Python3.7-64bit.tar.gz` for linux from [Paraview Website](https://www.paraview.org/download/)
 
-* extract the file to your `{$MainDirectory}` using `tar -xzvf ParaView-5.7.0-RC2-osmesa-MPI-Linux-Python3.7-64bit.tar.gz`
-
-* rename the extracted folder to `ParaView-5.7.0` using `sudo mv ParaView-5.7.0-RC2-osmesa-MPI-Linux-Python3.7-64bit ParaView-5.7.0`
 ## 2. Installing apache2 on ubuntu wsl:
 
 a useful instruction for setting up apache on wsl can be found [here](https://learn.getgrav.org/16/webservers-hosting/windows-subsystem-for-linux)
