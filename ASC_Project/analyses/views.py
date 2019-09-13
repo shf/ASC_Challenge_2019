@@ -282,7 +282,6 @@ def resin_page(request, slug):
     else:
         init={'name':'Resin_1', 'viscosity':0.02}
     if request.method == 'POST':
-        
         form = NewResinForm(request.POST, initial=init)
         if form.is_valid():
             resin = form.cleaned_data
@@ -344,8 +343,16 @@ def section_page(request, slug):
 
 def step_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
+
+    if Step.objects.filter(analysis_id=analysis.id).exists():
+        init = list(Step.objects.filter(
+            analysis_id=analysis.id).values())[0]
+    else:
+        init={'name':'Step_1', 'typ':0, 'endtime':1000, 'outputstep':0.01, 
+            'maxiterations': 10000, 'maxhaltsteps':10, 'minchangesaturation':0.001, 
+            'timescaling':5.0, 'fillthreshold':0.98}
     if request.method == 'POST':
-        form = NewStepForm(request.POST, initial={'name': "Step_1"})
+        form = NewStepForm(request.POST)
         if form.is_valid():
             step = form.cleaned_data
             step['analysis_id'] = analysis.id
@@ -432,7 +439,7 @@ def submit_page(request, slug):
             elif val['btn'] == 'download_conf':
                 InputData = create_conf(analysis.id)
                 print_conf(InputData)
-                file_path = os.path.join(settings.MEDIA_ROOT, str(analysis.id), 'results', 'config.dat')
+                file_path = os.path.join(settings.MEDIA_ROOT, str(analysis.id), 'results', 'config.db')
                 if os.path.exists(file_path):
                     with open(file_path, 'rb') as fh:
                         response = HttpResponse(fh.read(), content_type="xml")

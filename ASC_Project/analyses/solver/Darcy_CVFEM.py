@@ -763,4 +763,4 @@ class Darcy_CVFEM():
                 self._boundaryfile << (boundaries, t)
                 self._materialfile << (materials, t)
 
-                progress.update_state(state="PROGRESS",  meta={'iteration': numerator, 'fill_time': t, 'percent':(t/self._TEND)})
+                progress.update_state(state="PROGRESS",  meta={'iteration': numerator, 'fill_time': t, 'percent':(len(available_nodes)/self._num_nodes), 'numOfFilled':len(available_nodes), 'numofCells':self._num_nodes})
