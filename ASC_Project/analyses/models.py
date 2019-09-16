@@ -35,7 +35,6 @@ class Nodes(models.Model):
     x = models.FloatField(null=True,max_length=6)
     y = models.FloatField(null=True,max_length=6)
     z = models.FloatField(null=True,max_length=6)
-    FaceGroup=models.CharField(max_length=50, default="_None")
     EdgeGroup=models.CharField(max_length=50, default="_None")
     mesh = models.ForeignKey(Mesh, on_delete=models.CASCADE)
 
@@ -47,6 +46,7 @@ class Connectivity(models.Model):
     N1 = models.IntegerField(null=True)
     N2 = models.IntegerField(null=True)
     N3 = models.IntegerField(null=True)
+    FaceGroup = models.CharField(max_length=300, default="AllDomain")
     mesh = models.ForeignKey(Mesh, on_delete=models.CASCADE)
 
     def __str__(self):

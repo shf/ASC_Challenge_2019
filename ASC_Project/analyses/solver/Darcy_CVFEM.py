@@ -4,17 +4,14 @@
 
 from __future__ import absolute_import, unicode_literals
 
-import fenics as fe
-import numpy as np
-import time
-import logging
 import copy
 import logging
 import os
 import sys
 import time
 
-
+import fenics as fe
+import numpy as np
 
 __all__ = ['Darcy_CVFEM']
 
@@ -109,16 +106,17 @@ class Darcy_CVFEM():
             self._message_file.write("Section thickness: " + str(_sections[i]['thickness']) + "\n")
             self._message_file.write("Section volume fraction: " + str(_sections[i]['volume_fraction']) + "\n")
 
-            for node in _sections[i]['nodes']:
-                self._h[node] = _sections[i]['thickness']
-                self._phi[node] = _sections[i]['volume_fraction']
-
-                ver=fe.Vertex(self._mesh,node)
-                for cell in fe.cells(ver):
-                    entity=cell.entities(0)
-                    if all(item in _sections[i]['nodes'] for item in entity):
-                        self._materials[cell.index()] = _sections[i]['marker'] 
-
+            for face in _sections[i]['faces']:
+                # Shayan please double check this section, what happens if you have more than 1 layer? or on boundary nodes between sections
+                cell=fe.Cell(self._mesh,face)
+                for node in cell.entities(0):
+                    self._h[node] = _sections[i]['thickness']
+                    self._phi[node] = _sections[i]['volume_fraction']
+                self._materials[face] = _sections[i]['marker'] 
+                # for cell in fe.cells(ver):
+                #     entity=cell.entities(0)
+                #     if all(item in _sections[i]['faces'] for item in entity):
+                #         self._materials[cell.index()] = _sections[i]['marker'] 
         if self._dim == 2:
             for i in range(self._num_cells):
                 self._k_global[i] = np.array([self._k[self._materials[i]][0][0], self._k[self._materials[i]][0][1]], 
@@ -424,7 +422,7 @@ class Darcy_CVFEM():
         FFvsTime = self._FFvsTime
         k_exp = self._k_exp
 #        print('here')
-#        v_test = fe.interpolate(k_exp, fe.TensorFunctionSpace(mesh, "CG", 1, shape=(2,2)))
+#        k_exp = fe.interpolate(k_exp, fe.TensorFunctionSpace(mesh, "CG", 1, shape=(2,2)))
 #        print('herrrre')
 #        self._boundaryfile << (v_test, 0)
       
