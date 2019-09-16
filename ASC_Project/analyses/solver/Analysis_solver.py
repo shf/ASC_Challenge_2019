@@ -17,10 +17,10 @@ def create_conf(_id):
     _analysis = Analysis.objects.get(id=_id)
 
     FaceList = {}
-    for item in Connectivity.objects.filter(mesh_id=_analysis.mesh).values():
+    for item in Nodes.objects.filter(mesh_id=_analysis.mesh).values():
         if item['FaceGroup'] not in FaceList.keys():
             FaceList[item['FaceGroup']] = []
-        FaceList[item['FaceGroup']].append(item['ElmNum'])
+        FaceList[item['FaceGroup']].append(item['NodeNum'])
 
     KXX = {}
     KXY = {}
@@ -74,7 +74,7 @@ def create_conf(_id):
             'K22':KYY[section['name']],
             'thickness':H[section['name']],
             'volume_fraction':phi[section['name']],
-            'faces':FaceList[section['name']],
+            'nodes':FaceList[section['name']],
         }
         section_id = section_id + 1
 
@@ -96,7 +96,7 @@ def create_conf(_id):
         if item['EdgeGroup'] not in EdgeList.keys():
             EdgeList[item['EdgeGroup']] = []
         EdgeList[item['EdgeGroup']].append(item['NodeNum'])
-    EdgeList.pop("_None",None)
+    del EdgeList["_None"]
 
     Inlets = {}
     Outlets = {}
@@ -152,7 +152,7 @@ def create_conf(_id):
 
 @shared_task
 def print_conf(InputData):
-    _directory = InputData['analysis']['folder_address']
+    _directory = InputData['analysis']['folder_address'] + "/results/"
     if not os.path.exists(_directory):
             os.makedirs(_directory)
     _message_file = sh.open(_directory + "/config.db", "c")

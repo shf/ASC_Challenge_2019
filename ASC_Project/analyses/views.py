@@ -2,10 +2,9 @@ import json
 import os
 import subprocess
 import time
-import numpy as np
+
 import celery
 import plotly.graph_objs as go
-import colorlover as cl
 import plotly.offline as opy
 from celery import current_app
 from celery.result import AsyncResult
@@ -17,7 +16,6 @@ from django.http import HttpResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaulttags import register
 
-
 from .forms import (StartApp, JobSubmitForm, MeshConfirmationForm, NewAnalysisForm,
                     NewBCForm, NewMeshForm, NewPreformForm, NewResinForm,
                     NewSectionForm, NewStepForm, ResultsForm, StatusForm)
@@ -27,31 +25,26 @@ from .solver.Analysis_solver import solve_darcy, print_conf, create_conf
 from .solver.Importers import Contour, MeshImport
 
 
-def PlotlyPlot(nodes, table, NumFace):
+def PlotlyPlot(nodes, table, intensity):
 
     # nodes
     xn = []
     yn = []
     zn = []
-    for node in nodes.values():
-        xn.append(node["x"])
-        yn.append(node["y"])
-        zn.append(node["z"])
+    for line in nodes.values():
+        xn.append(line["x"])
+        yn.append(line["y"])
+        zn.append(line["z"])
 
     # connectivity
     ii = []
     jj = []
     kk = []
-    FaceColor = []
-    colors = cl.to_rgb(cl.interp(cl.scales[str(5)]['div']['RdYlBu'],NumFace))
-    palette = {}
-    for n, item in enumerate(table.values('FaceGroup').distinct()):
-        palette [item['FaceGroup']] = colors[n]
-    for element in table.values():
-        ii.append(element["N1"])
-        jj.append(element["N2"])
-        kk.append(element["N3"])
-        FaceColor.append(palette[element['FaceGroup']])
+
+    for line in table.values():
+        ii.append(line["N1"])
+        jj.append(line["N2"])
+        kk.append(line["N3"])
 
     # define lines of each element
     x_line = []
@@ -62,14 +55,25 @@ def PlotlyPlot(nodes, table, NumFace):
         x_line.extend([xn[v] for v in elem]+[None])
         y_line.extend([yn[v] for v in elem]+[None])
         z_line.extend([zn[v] for v in elem]+[None])
+    colorbar_title = "Field"
+    if intensity:
+
+        showscale = True
+    else:
+        showscale = False
 
     figure = go.Figure(data=[
         go.Mesh3d(
             x=xn,
             y=yn,
             z=zn,
+            showscale=showscale,
             hoverinfo='skip',
-            facecolor=FaceColor,
+
+            color='darkturquoise',
+            colorscale='Rainbow',
+            colorbar_title=colorbar_title,
+            intensity=intensity,
             i=ii,
             j=jj,
             k=kk,
@@ -103,12 +107,7 @@ def PlotlyPlot(nodes, table, NumFace):
     )
     )
 
-    return opy.plot(figure, auto_open=False, output_type='div'), palette
-
-# dictionary for returning face color for each face in template
-@register.filter
-def face_color(dictionary, key):    
-    return dictionary[key]
+    return opy.plot(figure, auto_open=False, output_type='div')
 
 # dictionary for sidebar switching
 @register.filter
@@ -191,15 +190,14 @@ def home(request):
 def apphome(request):
     analysis = Analysis.objects.all()
     if request.method == 'POST':
-        form = NewAnalysisForm(request.POST)
+        form = NewAnalysisForm(request.POST, initial={'name': "Analysis_1"})
         if form.is_valid():
             analysis = form.save(commit=False)
-            analysis.name=analysis.name.replace(" ", "_")
             analysis.save()
 
             return redirect('meshupload', slug=analysis.name)
     else:
-        form = NewAnalysisForm(initial={'name': "Analysis_{}".format(len(analysis))})
+        form = NewAnalysisForm(initial={'name': "Analysis_1"})
     Page = SideBarPage().DicUpdate("")
     return render(request, 'apphome.html', {'page': Page, 'form': form})
 
@@ -220,11 +218,6 @@ def mesh_page(request, slug):
             MeshImp = MeshImport("media/"+str(mesh.address))
             MeshImp.UNVtoXMLConverter()
 
-            # edges and faces should be extracted before calling for nodes and table
-            edges, faces = MeshImp.MeshGroups()
-            mesh.NumEdges = len(edges)
-            mesh.NumFaces = 1 if len(faces) == 0 else len(faces)
-
             # save mesh data in database
             nodes, ConnectivityTable = MeshImp.MeshData()
             for key, value in nodes.items():
@@ -233,6 +226,10 @@ def mesh_page(request, slug):
             for key, value in ConnectivityTable.items():
                 Connectivity.objects.create(ElmNum=int(key), N1=float(
                     value[0]), N2=float(value[1]), N3=float(value[2]), mesh=mesh)
+
+            edges, faces = MeshImp.MeshGroups()
+            mesh.NumEdges = len(edges)
+            mesh.NumFaces = len(faces)
             mesh.save()
             for key, value in edges.items():
                 for item in value:
@@ -241,7 +238,7 @@ def mesh_page(request, slug):
 
             for key, value in faces.items():
                 for item in value:
-                    obj = Connectivity.objects.filter(ElmNum=item, mesh_id=mesh.id)
+                    obj = Nodes.objects.filter(NodeNum=item, mesh_id=mesh.id)
                     obj.update(FaceGroup=key)
 
             return redirect('meshdisplay', slug=analysis.name)
@@ -256,7 +253,8 @@ def display_mesh(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     nodes = Nodes.objects.filter(mesh_id=analysis.mesh.id)
     table = Connectivity.objects.filter(mesh_id=analysis.mesh.id)
-    div, palette = PlotlyPlot(nodes, table, analysis.mesh.NumFaces)
+    div = PlotlyPlot(nodes, table, None)
+
     if request.method == 'POST':
         form = MeshConfirmationForm(request.POST)
         if form.is_valid():
@@ -271,8 +269,7 @@ def display_mesh(request, slug):
     dic = PageVariables(Page, form, analysis)
     dic['graph'] = div
     dic['Edges'] = nodes.values('EdgeGroup').distinct()
-    dic['Faces'] = [face['FaceGroup'] for face in table.values('FaceGroup').distinct()]
-    dic['palette'] = palette
+    dic['Faces'] = nodes.values('FaceGroup').distinct()
     return render(request, 'meshdisplay.html', dic)
 
 
@@ -421,7 +418,7 @@ def submit_page(request, slug):
             elif val['btn'] == 'download_conf':
                 InputData = create_conf(analysis.id)
                 print_conf(InputData)
-                file_path = os.path.join(settings.MEDIA_ROOT, str(analysis.id), 'config.db')
+                file_path = os.path.join(settings.MEDIA_ROOT, str(analysis.id), 'results', 'config.db')
                 if os.path.exists(file_path):
                     with open(file_path, 'rb') as fh:
                         response = HttpResponse(fh.read(), content_type="xml")

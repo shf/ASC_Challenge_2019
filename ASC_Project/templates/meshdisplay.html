@@ -52,10 +52,9 @@ Mesh
         </tr>
       </thead>
       <tbody>
-        {% for name in Faces %}
+        {% for r in Faces %}
         <tr>
-          <td>{{name}}</td>
-          <td><i class="fas fa-stop fa-2x" style="color:{{palette|face_color:name}}"></i> </td>
+          <td>{{r.FaceGroup}}</td>
         </tr>
         {% endfor %}
       </tbody>

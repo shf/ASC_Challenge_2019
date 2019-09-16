@@ -2,7 +2,6 @@ from django import forms
 from .models import Analysis
 from .models import Mesh
 from .models import Nodes
-from .models import Connectivity
 from .models import Resin
 from .models import Preform
 from .models import Section
@@ -55,7 +54,7 @@ class NewSectionForm(forms.ModelForm):
         super(NewSectionForm, self).__init__(*args, **kwargs)
         self.fields['preform'].queryset = Preform.objects.filter(analysis=self.analysis)
         FaceList=["_None"]
-        for items in Connectivity.objects.filter(mesh_id=self.mesh).values():
+        for items in Nodes.objects.filter(mesh_id=self.mesh).values():
             if items['FaceGroup'] not in FaceList:
                 FaceList.append(items['FaceGroup'])
         FaceList.remove("_None")
