@@ -79,6 +79,7 @@ class Darcy_CVFEM():
         self._boundaryfile = fe.File(_data_handling['folder_address'] + "/results/boundaries.pvd")
         self._materialfile = fe.File(_data_handling['folder_address'] + "/results/materials.pvd")
         self._flowfrontfile = fe.File(_data_handling['folder_address'] + "/results/flowfrontvstime.pvd")
+        self._normalsfile = fe.File(_data_handling['folder_address'] + "/results/cellnormals.pvd")
 
         self._message_file.write("File handlers created Successfully.\n")
 
@@ -139,7 +140,7 @@ class Darcy_CVFEM():
                                 [np.sin(theta)*np.sin(theta), np.cos(theta)*np.cos(theta), -2.0*np.sin(theta)*np.cos(theta)],  
                                 [-np.sin(theta)*np.cos(theta), np.sin(theta)*np.cos(theta), np.cos(theta)*np.cos(theta) - np.sin(theta)*np.sin(theta)]])
                     
-                self._k_global[i] = T*k_local
+                self._k_global[i] = np.matmul(np.matmul(np.transpose(T),k_local),T)
                 
         class Permeability(fe.UserExpression):
             def __init__(self, materials, k, dim, **kwargs):
@@ -171,6 +172,29 @@ class Darcy_CVFEM():
                     return (3, 3)
 
         self._k_exp = Permeability(self._materials, self._k_global, self._dim, degree=1)
+
+        class Normalls(fe.UserExpression):
+            def __init__(self, mesh, dim, **kwargs):
+                self.__dim = dim
+                self.__mesh = mesh
+                super().__init__(**kwargs)
+
+            def eval_cell(self, values, x, ufc_cell):
+                if self.__dim == 3:
+                    for cell in fe.cells(fe.MeshEntity(self.__mesh, self.__mesh.topology().dim(), ufc_cell.index)):
+                        values[0] = cell.cell_normal().x()
+                        values[1] = cell.cell_normal().y()
+                        values[2] = cell.cell_normal().z()
+            def value_shape(self):
+                if self.__dim == 3:
+                    return (3,)
+
+        self._normal_exp = Normalls(self._mesh, self._dim, degree=2)
+
+        nh = fe.project(self._normal_exp, self._XX)
+        nh.rename("Normals", "")
+
+        self._normalsfile << nh 
 
         v2d = fe.vertex_to_dof_map(self._QQ)
         self._h_exp = fe.Function(self._QQ)
@@ -355,7 +379,7 @@ class Darcy_CVFEM():
 
         for v_i in self._vertices_inlet:
             coord_i = self._coords[v_i]
-            self._saturation[v_i] = 1.0
+            self._saturation[v_i] = 0.0
             self._FFvsTime[v_i] = 0.0
             for v_j in range(self._num_nodes):
                 coord_j = self._coords[v_j]
@@ -423,9 +447,8 @@ class Darcy_CVFEM():
         facet_on_flow_front = set() # facets on the flow front
 
         # populating nodes on the domain
-        for i in set(range(num_nodes)) - available_nodes:
-            if S[i]>0:
-                available_nodes.add(i)
+        for i in self._vertices_inlet:
+            available_nodes.add(i)
 
         # populating nodes and facets on the flow front and set marker = 2
         # populating cells in the domain
@@ -626,7 +649,6 @@ class Darcy_CVFEM():
                         sh.vector()[v2d[v_i]] = S[v_i]
 
             # finding available cells and time-step for next step
-            unfilled_nodes = set()
             nodes_on_flow_front = set()
 
             boundaries.set_all(0)
@@ -638,8 +660,6 @@ class Darcy_CVFEM():
             for i in set(range(num_nodes)) - available_nodes:
                 if S[i] > self._Saturation_threshold:
                     available_nodes.add(i)
-                if S[i] < self._Saturation_threshold:
-                    unfilled_nodes.add(i)
 
             for i in available_nodes - available_nodes_old:
                 for c in fe.cells(fe.MeshEntity(mesh, mesh.topology().dim()-2, i)):
@@ -656,35 +676,47 @@ class Darcy_CVFEM():
                 for i in available_nodes - available_nodes_old:
                     FFvsTime[i] = t
 
-            if unfilled_nodes == set() and self._termination_type == 'Fill everywhere':
+            if len(available_nodes) == num_nodes and self._termination_type == 'Fill everywhere':
                 self._message_file.write('\nAll CVs are filled! \n')
+                progress.update_state(state="SUCCESS",  meta={'message':'All CVs are filled! <br>' })
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
                 self._flowfrontfile << ffvstimeh
+                time.sleep(3)
                 break
             elif numerator == self._max_nofiteration:
                 self._message_file.write('\nMaximum iteration number ' + str(self._max_nofiteration) + ' is reached! \n')
+                progress.update_state(state="SUCCESS",  meta={'message':'Maximum iteration number ' + str(self._max_nofiteration) + ' is reached! <br>' })
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
                 self._flowfrontfile << ffvstimeh
+                time.sleep(3)
                 break
             elif t > TEND:
-                self._message_file.write('\nMaximum filling time is reached! \n')
+                message = '\nMaximum filling time is reached! \n'
+                self._message_file.write(message)
+                progress.update_state(state="SUCCESS",  meta={'message':'Maximum filling time is reached! <br>' })
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
                 self._flowfrontfile << ffvstimeh
+                time.sleep(3)
                 break
             elif self._termination_para > self._Number_consecutive_steps:
                 self._message_file.write('\nSaturation halted for ' + str(self._termination_para) + ' iterations! \n')
+                progress.update_state(state="SUCCESS",  meta={'message':'Saturation halted for ' + str(self._termination_para) + ' iterations! <br>' })
+                print({'message':'<br> Saturation halted for ' + str(self._termination_para) + ' iterations! <br>' })
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
                 self._flowfrontfile << ffvstimeh
+                time.sleep(3)
                 break
             elif self._Outlet_filled == True and self._termination_type == 'Fill the outlet':
                 self._message_file.write('\nAll outlet nodes are filled! \n')
+                progress.update_state(state="SUCCESS",  meta={'message':'All outlet nodes are filled! <br>' })
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
                 self._flowfrontfile << ffvstimeh
+                time.sleep(3)
                 break
 
             facet_on_flow_front = set()

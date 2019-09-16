@@ -1,8 +1,9 @@
 var CeleryProgressBar = (function () {
-    function onSuccessDefault(progressBarElement, progressBarMessageElement,gifElement) {
+    function onSuccessDefault(progressBarElement, progressBarMessageElement,gifElement, progress) {
         progressBarElement.style.backgroundColor = '#76ce60';
         progressBarElement.style.width = 100 + "%";
-        progressBarMessageElement.innerHTML = "Success!";
+        progressBarMessageElement.innerHTML = progress.message;
+        console.log(progress.message)
         gifElement.src='/static/success.gif/'
     }
 
@@ -39,7 +40,7 @@ var CeleryProgressBar = (function () {
                     setTimeout(updateProgress, pollInterval, progressUrl, options);
                 } 
                 if (data.state === 'SUCCESS') {
-                    onSuccess(progressBarElement, progressBarMessageElement, gifElement);
+                    onSuccess(progressBarElement, progressBarMessageElement, gifElement, data.details);
                 } 
                 
             });
