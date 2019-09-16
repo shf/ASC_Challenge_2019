@@ -17,6 +17,8 @@ class MeshImport():
         TriangleElement = False
         for line in UNVFile:
             temp = line.split()
+
+            # -1 defines the end of sections in unv file
             if "-1" in temp:
                 _flag = None
             if _flag == "Nodes":
@@ -70,7 +72,8 @@ class MeshImport():
         UNVFile = open(self._FileAddress, "r").readlines()
         InGroup = False
         InSet = False
-        _groups = collections.defaultdict(list)
+        _Edges = collections.defaultdict(list)
+        _Faces = collections.defaultdict(list)
         for line in UNVFile:
             temp = line.split()
             if "-1" in temp and len(temp) == 1:
@@ -78,10 +81,21 @@ class MeshImport():
             if InGroup == True:
                 if InSet == True:
                     if len(temp) == 4:
-                        _groups[SetName].append(int(temp[1]))
+                        # if it is a node group
+                        if temp [0] == '7':
+                            _Edges[SetName].append(int(temp[1]))
+                        # if it is a face group
+                        elif temp [0] == '8':
+                            _Faces[SetName].append(int(temp[1]))
                     elif len(temp) == 8:
-                        _groups[SetName].append(int(temp[1]))
-                        _groups[SetName].append(int(temp[5]))
+                        # if it is a node group
+                        if temp [0] == '7':
+                            _Edges[SetName].append(int(temp[1]))
+                            _Edges[SetName].append(int(temp[5]))
+                        # if it is a face group
+                        elif temp [0] == '8':
+                            _Faces[SetName].append(int(temp[1]))
+                            _Faces[SetName].append(int(temp[5]))                                                   
                     else:
                         InSet = False
                 if len(temp) <= 2:
@@ -89,43 +103,37 @@ class MeshImport():
                     InSet = True
             if "2467" in temp and len(temp) == 1:
                 InGroup = True
-
         # Remove zero values
-        for key, value in _groups.items():
-            _groups[key] = list(filter((0).__ne__, value))
-            
-        # renumbering nodes to be compatible with XML
-        for key,value in _groups.items():
-            _groups[key] = [i-1 for i in value]
-        
-        # removing empty keys if exist
-        _groups.pop('', None)
-        
-        # extracting faces
-        _Faces = {}
-        if len(self._connectivity) > 1:
-            for key, grp in _groups.items():
-                n=1
-                for value in self._connectivity.values():
-                    isElem = all(elem in grp for elem in value)
-                    if isElem == True:
-                        n+=1
-                        # 4 should be minimum elements with the given nodes
-                        if n>=4:
-                            _Faces[key] = grp
-                            break
-        for key in _Faces.keys():
-            del _groups[key]
-
+        for key, value in _Edges.items():
+            _Edges[key] = list(filter((0).__ne__, value))
         for key, value in _Faces.items():
-            _Faces[key]=list(map(int, value))
+            _Faces[key] = list(filter((0).__ne__, value))
+        
+        # Remove empty entries
+        for key, value in list(_Faces.items()):         
+            if not value:
+                del _Faces[key]
+        
+        # renumbering nodes to be compatible with XML
+        for key,value in _Edges.items():
+            _Edges[key] = [i-1 for i in value]
+    
+        # renumbering group elements from 0
+        _table={}
+        _OldFaces = _Faces
+        for n, elm in enumerate(self._connectivity.keys()):
+            _table[n] = self._connectivity[elm]
+            # replace the number
+            for face, item in _OldFaces.items():
+                if int(elm) in item:
+                    _Faces[face][item.index(int(elm))]=n
+        self._connectivity = _table
 
-        # if there is no face defined
-        if len(_Faces)==0:
-            _Faces['AllDomain']=list(map(int, self._Nodes))
-        for key, value in _groups.items():
-            _groups[key]=list(map(int, value))
-        return _groups, _Faces
+        # removing empty keys if exist
+        _Edges.pop('', None)
+        _Faces.pop('', None)
+
+        return _Edges, _Faces
 
 class Contour():
     def __init__(self,address):
