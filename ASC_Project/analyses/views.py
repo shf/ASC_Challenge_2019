@@ -210,6 +210,11 @@ def mesh_page(request, slug):
         if form.is_valid():
             MeshFile = form.cleaned_data
             MeshFile['analysis_id'] = analysis.id
+            if Mesh.objects.filter(analysis=analysis).exists():
+                Nodes.objects.filter(mesh_id=analysis.mesh.id).delete()
+                Connectivity.objects.filter(mesh_id=analysis.mesh.id).delete()
+                Mesh.objects.filter(analysis=analysis).delete()
+                os.remove(os.path.join(settings.MEDIA_ROOT, str(analysis.id), 'mesh.xml'))
             Mesh.objects.update_or_create(MeshFile, analysis=analysis)
             mesh = get_object_or_404(Mesh, analysis_id=analysis.id)
 
@@ -217,7 +222,7 @@ def mesh_page(request, slug):
             mesh.name = str(mesh.address).split("/")[1].split(".")[0]
 
             # save mesh in xml format
-            MeshImp = MeshImport("media/"+str(mesh.address))
+            MeshImp = MeshImport(os.path.join(settings.MEDIA_ROOT, str(mesh.address)))
             MeshImp.UNVtoXMLConverter()
 
             # edges and faces should be extracted before calling for nodes and table
@@ -432,7 +437,7 @@ def submit_page(request, slug):
                 file_path = os.path.join(settings.MEDIA_ROOT, str(analysis.mesh.address))
                 if os.path.exists(file_path):
                     with open(file_path, 'rb') as fh:
-                        response = HttpResponse(fh.read(), content_type="xml")
+                        response = HttpResponse(fh.read(), content_type="unv")
                         response['Content-Disposition'] = 'inline; filename=' + os.path.basename(file_path)
                         return response
                 raise Http404

@@ -346,7 +346,8 @@ class Darcy_CVFEM():
                 self._pressure_inlet_dicts.append(i)
             else:
                 self._flux_inlet_info[i] = {}
-                        
+        
+        self._min_outlet_pressure = 0.0
         for i in self._outlets:
             for node in self._outlets[i]['nodes']:
                 ver=fe.Vertex(self._mesh,node)
@@ -355,7 +356,8 @@ class Darcy_CVFEM():
                         self._boundaries[edge.index()]=self._outlets[i]['marker']
             if self._outlets[i]['condition'] == 'Pressure':
                 self._pressure_outlet_dicts.append(i)
-
+                self._min_outlet_pressure = min(self._min_outlet_pressure, self._outlets[i]['value'])
+        
         self._vel_inlet = np.zeros(self._num_nodes)
 
         for i in self._flux_inlet_info.keys():
@@ -600,7 +602,7 @@ class Darcy_CVFEM():
             bcs.append(fe.DirichletBC(ZZ, self._outlets[i]['value'], boundaries, self._outlets[i]['marker']))
 
         # boundary condition for flow-front
-        bc_flowfront = [fe.DirichletBC(ZZ, 0.0, boundaries, 99)] # should be discussed!!!!
+        bc_flowfront = [fe.DirichletBC(ZZ, self._min_outlet_pressure, boundaries, 99)]
 
         # a) set BC and Domain in each step
         # Domain
@@ -751,6 +753,8 @@ class Darcy_CVFEM():
                 time.sleep(3)
                 break
             elif numerator == self._max_nofiteration:
+                for i in set(range(self._num_nodes)) - available_nodes:
+                    FFvsTime[i] = t
                 self._message_file.write('\nMaximum iteration number ' + str(self._max_nofiteration) + ' is reached! \n')
                 progress.update_state(state="SUCCESS",  meta={'message':'Maximum iteration number ' + str(self._max_nofiteration) + ' is reached! <br>' })
                 for i in range(len(FFvsTime)):
@@ -759,6 +763,8 @@ class Darcy_CVFEM():
                 time.sleep(3)
                 break
             elif t > TEND:
+                for i in set(range(self._num_nodes)) - available_nodes:
+                    FFvsTime[i] = t
                 message = '\nMaximum filling time is reached! \n'
                 self._message_file.write(message)
                 progress.update_state(state="SUCCESS",  meta={'message':'Maximum filling time is reached! <br>' })
@@ -768,6 +774,8 @@ class Darcy_CVFEM():
                 time.sleep(3)
                 break
             elif self._termination_para > self._Number_consecutive_steps:
+                for i in set(range(self._num_nodes)) - available_nodes:
+                    FFvsTime[i] = t
                 self._message_file.write('\nSaturation halted for ' + str(self._termination_para) + ' iterations! \n')
                 progress.update_state(state="SUCCESS",  meta={'message':'Saturation halted for ' + str(self._termination_para) + ' iterations! <br>' })
                 print({'message':'<br> Saturation halted for ' + str(self._termination_para) + ' iterations! <br>' })
@@ -777,6 +785,8 @@ class Darcy_CVFEM():
                 time.sleep(3)
                 break
             elif self._Outlet_filled == True and self._termination_type == 'Fill the outlet':
+                for i in set(range(self._num_nodes)) - available_nodes:
+                    FFvsTime[i] = t
                 self._message_file.write('\nAll outlet nodes are filled! \n')
                 progress.update_state(state="SUCCESS",  meta={'message':'All outlet nodes are filled! <br>' })
                 for i in range(len(FFvsTime)):
@@ -814,7 +824,7 @@ class Darcy_CVFEM():
                     bcs.append(fe.DirichletBC(ZZ, self._outlets[i]['value'], boundaries, self._outlets[i]['marker']))
 
                 # boundary condition for flow front
-                bc_flowfront = [fe.DirichletBC(ZZ, 0.0, boundaries, 99)] #DISCUSS!
+                bc_flowfront = [fe.DirichletBC(ZZ, self._min_outlet_pressure, boundaries, 99)]
 
                 # set BC and Domain in each step
                 # Domain
