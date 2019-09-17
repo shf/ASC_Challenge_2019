@@ -9,7 +9,7 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   <title>{% block title %} Composites on Clouds {% endblock %}</title>
-  <link rel="shortcut icon" type="image/png" href="{% static 'favicon.ico' %}"/>
+  <link rel="shortcut icon" type="image/png" href="{% static 'favicon.ico' %}" />
   <link href="https://fonts.googleapis.com/css?family=Peralta" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'css/sb-admin-2.min.css' %}">
   <link rel="stylesheet" href="{% static 'css/bootstrap.css' %}" type="text/css">
@@ -23,7 +23,7 @@
   <!-- page upper navbar -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
     <div class="mx-auto order-0">
-      <a class="navbar-brand" href="{% url 'home' %}"><i class="fas fa-chart-pie"></i>  Composites on Clouds</a>
+      <a class="navbar-brand" href="{% url 'home' %}"><i class="fas fa-chart-pie"></i> Composites on Clouds</a>
     </div>
   </nav>
 
@@ -68,24 +68,12 @@
             <!-- Form Contents -->
             <div class="col-xl-12 col-lg-12">
               <br>
-              <div class="card shadow mb-4">
-                <!-- Card Header - Dropdown -->
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
-                  <h6 class="m-0 font-weight-bold text-primary">{% block PageName %}{% endblock %}</h6>
-                </div>
-                <!-- Card Body -->
-                <div class="card-body">
-                  {% block content %}
-                  {% endblock %}
-                </div>
-
-              </div>
+              {% block content %}
+              {% endblock %}
             </div>
-            <!-- End of form content -->
+            <!-- End of row -->
           </div>
-          <!-- End of row -->
         </div>
-
         <!-- End of container fluid -->
       </div>
       <!-- End of Main Content -->
@@ -93,7 +81,8 @@
       <!-- Footer -->
       <footer class="sticky-footer bg-white">
         <div class="container my-auto">
-          <div class="copyright text-center my-auto">Copyright &copy; 2019 - Nasser Arbabi, Shayan Fahimi - Composites Research Network (CRN)<br>
+          <div class="copyright text-center my-auto">Copyright &copy; 2019 - Nasser Arbabi, Shayan Fahimi - Composites
+            Research Network (CRN)<br>
           </div>
         </div>
       </footer>

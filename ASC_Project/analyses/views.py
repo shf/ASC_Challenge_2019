@@ -189,19 +189,17 @@ def home(request):
     return render(request, 'home.html')
 
 def apphome(request):
-    analysis = Analysis.objects.all()
     if request.method == 'POST':
         form = NewAnalysisForm(request.POST)
         if form.is_valid():
             analysis = form.save(commit=False)
             analysis.name=analysis.name.replace(" ", "_")
             analysis.save()
-
             return redirect('meshupload', slug=analysis.name)
     else:
-        form = NewAnalysisForm(initial={'name': "Analysis_{}".format(len(analysis))})
+        form = NewAnalysisForm(initial={'name': "Analysis_{}".format(len(Analysis.objects.all())+1)})
     Page = SideBarPage().DicUpdate("")
-    return render(request, 'apphome.html', {'page': Page, 'form': form})
+    return render(request, 'apphome.html', {'page': Page, 'form': form, 'analysis':Analysis.objects.all()})
 
 def mesh_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
