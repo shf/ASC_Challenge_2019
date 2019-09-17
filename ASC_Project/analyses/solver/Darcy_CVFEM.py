@@ -13,8 +13,6 @@ import time
 import fenics as fe
 import numpy as np
 
-__all__ = ['Darcy_CVFEM']
-
 #__author__ = "Shayan Fahimi, Nasser Arbabi"
 #__copyright__ = "2019 Shayan Fahimi"
 #__credits__ = ["Shayan Fahimi, The FEniCS Team"]
@@ -36,6 +34,7 @@ class Darcy_CVFEM():
         _inlets = input['BCs']['inlets']
         _outlets = input['BCs']['outlets']
         _walls = input['BCs']['walls']
+        _hp = input['hp']
 #        _Loads = input['loads']
         _step = input['step']
         
@@ -48,6 +47,8 @@ class Darcy_CVFEM():
         self._define_step(_step)
         self._define_BCs(_inlets, _outlets, _walls)
         self._define_initial_conditions()
+        if _hp['hp_activated']:
+            self._define_openmedium(_hp, _data_handling)
 #        self._define_loads(_Loads)
 #        self.SolverConfig(_steps, _output)
         return None
@@ -67,7 +68,7 @@ class Darcy_CVFEM():
         Create output files to store the analysis results
         '''
         # Files for saving the solution
-        self._resultsfile = fe.XDMFFile(_data_handling['folder_address'] + "/results/analysis.xdmf")
+        self._resultsfile = fe.XDMFFile(_data_handling['folder_address'] + "/results/fillingmedium.xdmf")
         self._resultsfile.parameters["flush_output"] = True
         self._resultsfile.parameters["functions_share_mesh"] = True
         self._resultsfile.parameters["rewrite_function_mesh"] = False
@@ -76,7 +77,7 @@ class Darcy_CVFEM():
         self._boundaryfile = fe.File(_data_handling['folder_address'] + "/results/boundaries.pvd")
         self._materialfile = fe.File(_data_handling['folder_address'] + "/results/materials.pvd")
         self._flowfrontfile = fe.File(_data_handling['folder_address'] + "/results/flowfrontvstime.pvd")
-        self._normalsfile = fe.File(_data_handling['folder_address'] + "/results/cellnormals.pvd")
+#        self._normalsfile = fe.File(_data_handling['folder_address'] + "/results/cellnormals.pvd")
 
         self._message_file.write("File handlers created Successfully.\n")
 
@@ -107,21 +108,16 @@ class Darcy_CVFEM():
             self._message_file.write("Section volume fraction: " + str(_sections[i]['volume_fraction']) + "\n")
 
             for face in _sections[i]['faces']:
-                # Shayan please double check this section, what happens if you have more than 1 layer? or on boundary nodes between sections
                 cell=fe.Cell(self._mesh,face)
                 for node in cell.entities(0):
                     self._h[node] = _sections[i]['thickness']
                     self._phi[node] = _sections[i]['volume_fraction']
                 self._materials[face] = _sections[i]['marker'] 
-                # for cell in fe.cells(ver):
-                #     entity=cell.entities(0)
-                #     if all(item in _sections[i]['faces'] for item in entity):
-                #         self._materials[cell.index()] = _sections[i]['marker'] 
         if self._dim == 2:
             for i in range(self._num_cells):
                 self._k_global[i] = np.array([self._k[self._materials[i]][0][0], self._k[self._materials[i]][0][1]], 
                                             [self._k[self._materials[i]][1][0], self._k[self._materials[i]][1][1]])
-        if self._dim == 3:
+        elif self._dim == 3:
             for i in range(self._num_cells):
                 self._k_global[i] = np.zeros((3, 3))
                 for cell in fe.cells(fe.MeshEntity(self._mesh, self._mesh.topology().dim(), i)):
@@ -139,6 +135,10 @@ class Darcy_CVFEM():
                                 [-np.sin(theta)*np.cos(theta), np.sin(theta)*np.cos(theta), np.cos(theta)*np.cos(theta) - np.sin(theta)*np.sin(theta)]])
                     
                 self._k_global[i] = np.matmul(np.matmul(np.transpose(T),k_local),T)
+        else:
+            self._message_file.write('\nInternal Error: Mesh dimension is not accepted! \n')
+            raise Exception("Internal Error. Look at message file.")
+
                 
         class Permeability(fe.UserExpression):
             def __init__(self, materials, k, dim, **kwargs):
@@ -163,11 +163,18 @@ class Darcy_CVFEM():
                     values[6] = self.__k_global[ufc_cell.index][2][0]
                     values[7] = self.__k_global[ufc_cell.index][2][1]
                     values[8] = self.__k_global[ufc_cell.index][2][2]
+                else:
+                    self._message_file.write('\nInternal Error: Mesh dimension is not accepted! \n')
+                    raise Exception("Internal Error. Look at message file.")
+            
             def value_shape(self):
                 if self.__dim == 2:
                     return (2, 2)
                 elif self.__dim == 3:
                     return (3, 3)
+                else:
+                    self._message_file.write('\nInternal Error: Mesh dimension is not accepted! \n')
+                    raise Exception("Internal Error. Look at message file.")
 
         self._k_exp = Permeability(self._materials, self._k_global, self._dim, degree=1)
 
@@ -192,7 +199,7 @@ class Darcy_CVFEM():
         nh = fe.project(self._normal_exp, self._XX)
         nh.rename("Normals", "")
 
-        self._normalsfile << nh 
+#        self._normalsfile << nh 
 
         v2d = fe.vertex_to_dof_map(self._QQ)
         self._h_exp = fe.Function(self._QQ)
@@ -266,6 +273,9 @@ class Darcy_CVFEM():
             self._vel = np.zeros((self._num_nodes, 2)) # Velocity Vector
         elif self._dim == 3:
             self._vel = np.zeros((self._num_nodes, 3)) # Velocity Vector
+        else:
+            self._message_file.write('\nInternal Error: Mesh dimension is not accepted! \n')
+            raise Exception("Internal Error. Look at message file.")
         self._FFvsTime = np.zeros(self._num_nodes)
 
         self._message_file.write("Function spaces created successfully. \n")
@@ -336,7 +346,8 @@ class Darcy_CVFEM():
                 self._pressure_inlet_dicts.append(i)
             else:
                 self._flux_inlet_info[i] = {}
-                        
+        
+        self._min_outlet_pressure = 0.0
         for i in self._outlets:
             for node in self._outlets[i]['nodes']:
                 ver=fe.Vertex(self._mesh,node)
@@ -345,7 +356,8 @@ class Darcy_CVFEM():
                         self._boundaries[edge.index()]=self._outlets[i]['marker']
             if self._outlets[i]['condition'] == 'Pressure':
                 self._pressure_outlet_dicts.append(i)
-
+                self._min_outlet_pressure = min(self._min_outlet_pressure, self._outlets[i]['value'])
+        
         self._vel_inlet = np.zeros(self._num_nodes)
 
         for i in self._flux_inlet_info.keys():
@@ -395,8 +407,125 @@ class Darcy_CVFEM():
                 self._cell_voll[i] = self._cell_voll[i] + (shared_cell.volume()/3.0)*self._h[i]*self._phi[i]
 
         self._message_file.write("Initial conditions applied. \n")
+    
+    def _define_openmedium(self, _hp, _data_handling):
+        '''
+        Initializing the mesh and setting the number of nodes and cells and
+        cell volumes
+        '''
+        self._message_file.write("Creating open medium properties... \n")
+        
+        # Files for saving the solution of open medium
+        self._flowfrontfile_medium = fe.File(_data_handling['folder_address'] + "/results/flowfrontvstime_medium.pvd")
+
+        self._k_medium = _hp['K_medium']
+        self._h_medium = _hp['h_medium']
+        self._phi_medium = _hp['phi_medium']
+
+        self._k_medium_exp = fe.Constant(self._k_medium)
+        self._h_medium_exp = fe.Constant(self._h_medium)
+        self._phi_medium_exp = fe.Constant(self._phi_medium)
+        
+        self._saturation_medium = np.zeros(self._num_nodes) # Saturation vector
+        self._delta_saturation_medium = np.zeros(self._num_nodes) # growth of saturation in one step
+
+        if self._dim == 2:
+            self._vel_medium = np.zeros((self._num_nodes, 2)) # Velocity Vector
+        elif self._dim == 3:
+            self._vel_medium = np.zeros((self._num_nodes, 3)) # Velocity Vector
+        else:
+            self._message_file.write('\nInternal Error: Mesh dimension is not accepted! \n')
+            raise Exception("Internal Error. Look at message file.")
+        self._FFvsTime_medium = np.zeros(self._num_nodes)
+
+        self._cell_voll_medium = np.zeros(self._num_nodes)
+        
+        for i in range(len(self._cell_voll_medium)):
+            for shared_cell in fe.cells(fe.MeshEntity(self._mesh, self._mesh.topology().dim()-2, i)):
+                self._cell_voll_medium[i] = self._cell_voll_medium[i] + (shared_cell.volume()/3.0)
+        self._cell_voll_medium = self._cell_voll_medium*self._h_medium*self._phi_medium
+
     ################## INITIALIZE DOMAIN AND TIME-STEP ##################################
-    def solve(self, progress):
+    def _find_dtime(self, available_cells, vertices_inlet, V, h, S, cell_voll):
+        dt = self._TEND
+        for i in available_cells:
+            for c in fe.cells(fe.MeshEntity(self._mesh, self._mesh.topology().dim(), i)):
+                cell_midpoint = (self._coords[c.entities(0)[0]]+self._coords[c.entities(0)[1]]+self._coords[c.entities(0)[2]])/3.0
+                for v_i in c.entities(0):
+                    if S[v_i] < 1.0:
+                        for v_j in c.entities(0):
+                            if v_j in vertices_inlet:
+                                coord_i = self._coords[v_i]
+                                coord_j = self._coords[v_j]
+                                edge_midpoint = (coord_i + coord_j)/2.0
+                                if self._dim == 2:
+                                    norm = np.linalg.norm(cell_midpoint - edge_midpoint)
+                                    normal = [-(cell_midpoint[1] - edge_midpoint[1]), (cell_midpoint[0] - edge_midpoint[0])]/norm
+                                    distance = np.linalg.norm(coord_i - coord_j)
+                                    inward_normal = [(coord_i[0] - coord_j[0]), (coord_i[1] - coord_j[1])]/distance
+
+                                    if np.dot(inward_normal, normal) < 0:
+                                        normal = -normal
+
+                                elif self._dim == 3:
+                                    norm = np.linalg.norm(cell_midpoint - edge_midpoint)
+                                    normal_on_cell = np.cross(cell_midpoint - edge_midpoint, coord_i - coord_j)
+                                    normal_on_edge = np.cross(normal_on_cell, cell_midpoint - edge_midpoint)
+                                    normal = normal_on_edge / np.linalg.norm(normal_on_edge)
+                                    distance =  np.linalg.norm(coord_i - coord_j)
+                                    inward_normal = (coord_i - coord_j)/distance
+                                
+                                    if np.dot(inward_normal, normal) < 0:
+                                        normal = -normal
+                                else:
+                                    self._message_file.write('\nInternal Error: Mesh dimension is not accepted! \n')
+                                    raise Exception("Internal Error. Look at message file.")
+
+                                vel = (V[v_i] + V[v_j])/2.0
+                                flux = np.dot(vel, normal)*norm*h[v_i]
+                                dt = min(dt, (1 - S[v_i])*(cell_voll[v_i])/abs(flux))
+        return dt
+
+    def _find_fillfactor(self, available_cells, V, dt, h, delta_S, S, cell_voll):
+        for i in available_cells:
+                for c in fe.cells(fe.MeshEntity(self._mesh, self._mesh.topology().dim(), i)):
+                    cell_midpoint = (self._coords[c.entities(0)[0]]+self._coords[c.entities(0)[1]]+self._coords[c.entities(0)[2]])/3.0
+                    for v_i in c.entities(0):
+                        if S[v_i] < 1.0:
+                            for v_j in c.entities(0):
+                                if v_j != v_i:
+                                    coord_i = self._coords[v_i]
+                                    coord_j = self._coords[v_j]
+                                    edge_midpoint = (coord_i + coord_j)/2.0
+                                    if self._dim == 2:
+                                        norm = np.linalg.norm(cell_midpoint - edge_midpoint)
+                                        normal = [-(cell_midpoint[1] - edge_midpoint[1]), (cell_midpoint[0] - edge_midpoint[0])]/norm
+                                        distance = np.linalg.norm(coord_i - coord_j)
+                                        inward_normal = [(coord_i[0] - coord_j[0]), (coord_i[1] - coord_j[1])]/distance
+
+                                        if np.dot(inward_normal, normal) < 0:
+                                            normal = -normal
+
+                                    elif self._dim == 3:
+                                        norm = np.linalg.norm(cell_midpoint - edge_midpoint)
+                                        normal_on_cell = np.cross(cell_midpoint - edge_midpoint, coord_i - coord_j)
+                                        normal_on_edge = np.cross(normal_on_cell, cell_midpoint - edge_midpoint)
+                                        normal = normal_on_edge / np.linalg.norm(normal_on_edge)
+                                        distance =  np.linalg.norm(coord_i - coord_j)
+                                        inward_normal = (coord_i - coord_j)/distance
+                                    
+                                        if np.dot(inward_normal, normal) < 0:
+                                            normal = -normal
+                                    else:
+                                        self._message_file.write('\nInternal Error: Mesh dimension is not accepted! \n')
+                                        raise Exception("Internal Error. Look at message file.")
+
+                                    vel = (V[v_i] + V[v_j])/2.0
+                                    flux = np.dot(vel, normal)*norm*h[v_i]
+                                    delta_S[v_i] = delta_S[v_i] + dt*(abs(flux))/(cell_voll[v_i])
+        return delta_S
+
+    def solve_rtm(self, progress):
 
         mesh = self._mesh
         coords = self._coords
@@ -421,10 +550,6 @@ class Darcy_CVFEM():
         V = self._vel
         FFvsTime = self._FFvsTime
         k_exp = self._k_exp
-#        print('here')
-#        k_exp = fe.interpolate(k_exp, fe.TensorFunctionSpace(mesh, "CG", 1, shape=(2,2)))
-#        print('herrrre')
-#        self._boundaryfile << (v_test, 0)
       
         mu_exp = self._mu_exp
         phi_exp = self._phi_exp
@@ -438,6 +563,7 @@ class Darcy_CVFEM():
 
         BoundaryEdges = self._BoundaryEdges
         BoundaryNodes = self._BoundaryNodes
+
         # Book-keeping nodes and facets
         available_nodes = set() # nodes in the domain
         available_cells = set() # cells of the domain
@@ -476,7 +602,7 @@ class Darcy_CVFEM():
             bcs.append(fe.DirichletBC(ZZ, self._outlets[i]['value'], boundaries, self._outlets[i]['marker']))
 
         # boundary condition for flow-front
-        bc_flowfront = [fe.DirichletBC(ZZ, 0.0, boundaries, 99)] # should be discussed!!!!
+        bc_flowfront = [fe.DirichletBC(ZZ, self._min_outlet_pressure, boundaries, 99)]
 
         # a) set BC and Domain in each step
         # Domain
@@ -499,7 +625,7 @@ class Darcy_CVFEM():
         fe.solve(a == L, ph, bcs + bc_flowfront)
         ph.rename("Pressure", "")
 
-        # b) postprocess velocity
+        # c) postprocess velocity
         uh = fe.project(-k_exp/mu_exp*fe.grad(ph), XX)
         d2v = fe.dof_to_vertex_map(XX)
 
@@ -512,10 +638,12 @@ class Darcy_CVFEM():
                 V[int(d2v[3*i]/3), 0] = uh.vector()[3*i]
                 V[int(d2v[3*i]/3), 1] = uh.vector()[3*i+1]
                 V[int(d2v[3*i]/3), 2] = uh.vector()[3*i+2]
+        else:
+            self._message_file.write('\nInternal Error: Mesh dimension is not accepted! \n')
+            raise Exception("Internal Error. Look at message file.")
         uh.rename("velocity", "")
 
-#        self._max_estimate_TEND = self._max_distant/np.amax(V)
-
+        # d) assign saturation
         sh = fe.Function(QQ)
         ffvstimeh = fe.Function(QQ)
         sh.rename("Saturation", "")
@@ -524,47 +652,14 @@ class Darcy_CVFEM():
         for i in range(len(S)):
             sh.vector()[v2d[i]] = S[i]
 
-        # plot solution and write output file
+        # e) plot solution and write output file
         self._resultsfile.write(ph, t)
         self._resultsfile.write(uh, t)
         self._resultsfile.write(sh, t)
 
-        # find the time-step to fill one CV
-        dt = TEND 
+        dt = TEND
 
-        for i in available_cells:
-            for c in fe.cells(fe.MeshEntity(mesh, mesh.topology().dim(), i)):
-                cell_midpoint = (coords[c.entities(0)[0]]+coords[c.entities(0)[1]]+coords[c.entities(0)[2]])/3.0
-                for v_i in c.entities(0):
-                    if S[v_i] < 1.0:
-                        for v_j in c.entities(0):
-                            if v_j in vertices_inlet:
-                                coord_i = coords[v_i]
-                                coord_j = coords[v_j]
-                                edge_midpoint = (coord_i + coord_j)/2.0
-                                if self._dim == 2:
-                                    norm = np.linalg.norm(cell_midpoint - edge_midpoint)
-                                    normal = [-(cell_midpoint[1] - edge_midpoint[1]), (cell_midpoint[0] - edge_midpoint[0])]/norm
-                                    distance = np.linalg.norm(coord_i - coord_j)
-                                    inward_normal = [(coord_i[0] - coord_j[0]), (coord_i[1] - coord_j[1])]/distance
-
-                                    if np.dot(inward_normal, normal) < 0:
-                                        normal = -normal
-
-                                elif self._dim == 3:
-                                    norm = np.linalg.norm(cell_midpoint - edge_midpoint)
-                                    normal_on_cell = np.cross(cell_midpoint - edge_midpoint, coord_i - coord_j)
-                                    normal_on_edge = np.cross(normal_on_cell, cell_midpoint - edge_midpoint)
-                                    normal = normal_on_edge / np.linalg.norm(normal_on_edge)
-                                    distance =  np.linalg.norm(coord_i - coord_j)
-                                    inward_normal = (coord_i - coord_j)/distance
-                                
-                                    if np.dot(inward_normal, normal) < 0:
-                                        normal = -normal
-
-                                vel = (V[v_i] + V[v_j])/2.0
-                                flux = np.dot(vel, normal)*norm*h[v_i]
-                                dt = min(dt, (1 - S[v_i])*(cell_voll[v_i])/abs(flux))
+        dt = self._find_dtime(available_cells, vertices_inlet, V, h, S, cell_voll)
 
         dt = self._t_scaling*dt
         ################## SOLVING IN TIME ##################################
@@ -573,38 +668,7 @@ class Darcy_CVFEM():
             delta_S.fill(0)
 
             # Find fill factor for predicted time-step
-            for i in available_cells:
-                for c in fe.cells(fe.MeshEntity(mesh, mesh.topology().dim(), i)):
-                    cell_midpoint = (coords[c.entities(0)[0]]+coords[c.entities(0)[1]]+coords[c.entities(0)[2]])/3.0
-                    for v_i in c.entities(0):
-                        if S[v_i] < 1.0:
-                            for v_j in c.entities(0):
-                                if v_j != v_i:
-                                    coord_i = coords[v_i]
-                                    coord_j = coords[v_j]
-                                    edge_midpoint = (coord_i + coord_j)/2.0
-                                    if self._dim == 2:
-                                        norm = np.linalg.norm(cell_midpoint - edge_midpoint)
-                                        normal = [-(cell_midpoint[1] - edge_midpoint[1]), (cell_midpoint[0] - edge_midpoint[0])]/norm
-                                        distance = np.linalg.norm(coord_i - coord_j)
-                                        inward_normal = [(coord_i[0] - coord_j[0]), (coord_i[1] - coord_j[1])]/distance
-
-                                        if np.dot(inward_normal, normal) < 0:
-                                            normal = -normal
-
-                                    elif self._dim == 3:
-                                        normal_on_cell = np.cross(cell_midpoint - edge_midpoint, coord_i - coord_j)
-                                        normal_on_edge = np.cross(normal_on_cell, cell_midpoint - edge_midpoint)
-                                        normal = normal_on_edge / np.linalg.norm(normal_on_edge)
-                                        distance =  np.linalg.norm(coord_i - coord_j)
-                                        inward_normal = (coord_i - coord_j)/distance
-                                    
-                                        if np.dot(inward_normal, normal) < 0:
-                                            normal = -normal
-
-                                    vel = (V[v_i] + V[v_j])/2.0
-                                    flux = np.dot(vel, normal)*norm*h[v_i]
-                                    delta_S[v_i] = delta_S[v_i] + dt*(abs(flux))/(cell_voll[v_i])
+            delta_S = self._find_fillfactor(available_cells, V, dt, h, delta_S, S, cell_voll)
 
             # Finding dt to fill just one control volueme
             dt_new = dt
@@ -619,7 +683,8 @@ class Darcy_CVFEM():
                     if delta_S[i] != 0 and S[i] + delta_S[i] < 1.0:
                         dt_new = min(dt_new, (dt*(1.0 - S[i])/(delta_S[i])))
             else:
-                raise
+                self._message_file.write('\nInternal Error: Maximum saturation is less than 1.0! \n')
+                raise Exception("Internal Error. Look at message file.")
 
             for i in range(num_nodes):
                 if delta_S[i] != 0.0:
@@ -640,7 +705,7 @@ class Darcy_CVFEM():
                 if S[i] < self._Saturation_threshold:
                     self._Outlet_filled = False
 
-            # print for the user
+            # Print saturation for the user
             for i in available_cells:
                 for c in fe.cells(fe.MeshEntity(mesh, mesh.topology().dim(), i)):
                     for v_i in c.entities(0):
@@ -655,25 +720,30 @@ class Darcy_CVFEM():
             available_nodes_old = copy.deepcopy(available_nodes)
             available_cells_old = copy.deepcopy(available_cells)
 
+            # add nodes with S > thershhold to available nodes
             for i in set(range(num_nodes)) - available_nodes:
                 if S[i] > self._Saturation_threshold:
                     available_nodes.add(i)
 
+            # find available domains
             for i in available_nodes - available_nodes_old:
                 for c in fe.cells(fe.MeshEntity(mesh, mesh.topology().dim()-2, i)):
                     available_cells.add(c.global_index())
                     domains[c] = 1
 
+            # find flowfront(nodes not in available nodes)
             for c in available_cells:
                 for vertice in fe.vertices(fe.MeshEntity(mesh, mesh.topology().dim(), c)):
                     if vertice.index() not in available_nodes:
                         nodes_on_flow_front.add(vertice.global_index())
                         vertices[vertice] = 99
 
+            # adding time to nodes on flow front
             if available_nodes_old != available_nodes:
                 for i in available_nodes - available_nodes_old:
                     FFvsTime[i] = t
 
+            # termination cases
             if len(available_nodes) == num_nodes and self._termination_type == 'Fill everywhere':
                 self._message_file.write('\nAll CVs are filled! \n')
                 progress.update_state(state="SUCCESS",  meta={'message':'All CVs are filled! <br>' })
@@ -683,6 +753,8 @@ class Darcy_CVFEM():
                 time.sleep(3)
                 break
             elif numerator == self._max_nofiteration:
+                for i in set(range(self._num_nodes)) - available_nodes:
+                    FFvsTime[i] = t
                 self._message_file.write('\nMaximum iteration number ' + str(self._max_nofiteration) + ' is reached! \n')
                 progress.update_state(state="SUCCESS",  meta={'message':'Maximum iteration number ' + str(self._max_nofiteration) + ' is reached! <br>' })
                 for i in range(len(FFvsTime)):
@@ -691,6 +763,8 @@ class Darcy_CVFEM():
                 time.sleep(3)
                 break
             elif t > TEND:
+                for i in set(range(self._num_nodes)) - available_nodes:
+                    FFvsTime[i] = t
                 message = '\nMaximum filling time is reached! \n'
                 self._message_file.write(message)
                 progress.update_state(state="SUCCESS",  meta={'message':'Maximum filling time is reached! <br>' })
@@ -700,6 +774,8 @@ class Darcy_CVFEM():
                 time.sleep(3)
                 break
             elif self._termination_para > self._Number_consecutive_steps:
+                for i in set(range(self._num_nodes)) - available_nodes:
+                    FFvsTime[i] = t
                 self._message_file.write('\nSaturation halted for ' + str(self._termination_para) + ' iterations! \n')
                 progress.update_state(state="SUCCESS",  meta={'message':'Saturation halted for ' + str(self._termination_para) + ' iterations! <br>' })
                 print({'message':'<br> Saturation halted for ' + str(self._termination_para) + ' iterations! <br>' })
@@ -709,6 +785,8 @@ class Darcy_CVFEM():
                 time.sleep(3)
                 break
             elif self._Outlet_filled == True and self._termination_type == 'Fill the outlet':
+                for i in set(range(self._num_nodes)) - available_nodes:
+                    FFvsTime[i] = t
                 self._message_file.write('\nAll outlet nodes are filled! \n')
                 progress.update_state(state="SUCCESS",  meta={'message':'All outlet nodes are filled! <br>' })
                 for i in range(len(FFvsTime)):
@@ -719,9 +797,11 @@ class Darcy_CVFEM():
 
             facet_on_flow_front = set()
 
+            # renew boundary conditions
             self._define_BCs(self._inlets, self._outlets, self._walls)
             boundaries = self._boundaries
 
+            # renew boundaries
             for i in available_cells:
                 for e in fe.facets(fe.MeshEntity(mesh, mesh.topology().dim(), i)):
                     if e.entities(0)[0] in nodes_on_flow_front and e.entities(0)[1] in nodes_on_flow_front:
@@ -744,7 +824,7 @@ class Darcy_CVFEM():
                     bcs.append(fe.DirichletBC(ZZ, self._outlets[i]['value'], boundaries, self._outlets[i]['marker']))
 
                 # boundary condition for flow front
-                bc_flowfront = [fe.DirichletBC(ZZ, 0.0, boundaries, 99)] #DISCUSS!
+                bc_flowfront = [fe.DirichletBC(ZZ, self._min_outlet_pressure, boundaries, 99)]
 
                 # set BC and Domain in each step
                 # Domain
@@ -794,3 +874,12 @@ class Darcy_CVFEM():
                 self._materialfile << (materials, t)
 
                 progress.update_state(state="PROGRESS",  meta={'iteration': numerator, 'fill_time': t, 'percent':(len(available_nodes)/self._num_nodes), 'numOfFilled':len(available_nodes), 'numofCells':self._num_nodes})
+
+
+
+### SOLVE HP RTM
+    def solve_hprtm(self, progress):
+        self._message_file.write('\nThis capability has not been implemented yet! \n')
+        raise Exception("Internal Error. Look at message file.")
+
+        

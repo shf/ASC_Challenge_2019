@@ -40,7 +40,7 @@ class NewPreformForm(forms.ModelForm):
     btn = forms.CharField(label='', widget=forms.HiddenInput())
     class Meta:
         model = Preform
-        fields = ['name', 'thickness', 'K11', 'K12', 'K22']
+        fields = ['name', 'thickness', 'phi', 'K11', 'K12', 'K22']
 
 class NewSectionForm(forms.ModelForm):
     class Meta:

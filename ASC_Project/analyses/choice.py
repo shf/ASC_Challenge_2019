@@ -12,7 +12,6 @@ TYPE_OF_BC = (
 CONDITION_OF_BC = (
     ('Pressure', 'Pressure'), 
     ('Flow rate', 'Flow rate'),
-    ('None', 'None')
 )
 
 BINARY_CHOICES=[
