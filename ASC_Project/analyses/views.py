@@ -363,7 +363,7 @@ def step_page(request, slug):
     else:
         init={'name':'Step_1', 'typ':0, 'endtime':1000, 'outputstep':0.01, 
             'maxiterations':10000, 'maxhaltsteps':10, 'minchangesaturation':0.001, 
-            'timescaling':5.0, 'fillthreshold':0.99}
+            'timescaling':2.0, 'fillthreshold':0.999}
     if request.method == 'POST':
         form = NewStepForm(request.POST, initial=init)
         if form.is_valid():

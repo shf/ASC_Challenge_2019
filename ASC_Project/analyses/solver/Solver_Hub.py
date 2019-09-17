@@ -41,7 +41,7 @@ def create_conf(_id):
             T = np.array([[np.cos(radian_rot), np.sin(radian_rot)], [-np.sin(radian_rot), np.cos(radian_rot)]])
             H[section['name']] = H[section['name']] + preform.thickness
             phi[section['name']] = phi[section['name']] + preform.phi*preform.thickness
-            k = T * np.array([[preform.K11, preform.K12], [preform.K12, preform.K22]])
+            k = np.matmul(np.matmul(T,np.array([[preform.K11, preform.K12], [preform.K12, preform.K22]])), np.transpose(T))
             KXX[section['name']] = KXX[section['name']] + preform.thickness * k[0][0]
             KXY[section['name']] = KXY[section['name']] + preform.thickness * k[0][1]
             KYY[section['name']] = KYY[section['name']] + preform.thickness * k[1][1]
