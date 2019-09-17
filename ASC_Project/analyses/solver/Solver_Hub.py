@@ -56,6 +56,13 @@ def create_conf(_id):
         'folder_address':("media/" + str(_analysis.id))
     }
 
+    hp = {
+        'hp_activated': True, 
+        'K_medium': 1e-5,
+        'h_medium': 0.1,
+        'phi_medium': 0.95,
+    }
+
     mesh = {
         'mesh_name': _analysis.mesh.name
     }
@@ -143,6 +150,7 @@ def create_conf(_id):
         'sections':section_data,
         'step':step_data,
         'BCs':BCs,
+        'hp': hp,
 #        'ICs':InitialConditions,
 #        'loads':Loads,
 #        'output':Output
@@ -163,9 +171,16 @@ def print_conf(InputData):
     _message_file.close()
 
 @shared_task (bind=True)
-def solve_darcy(progress,_id):
+def solver_rtm(progress,_id):
     InputData = create_conf(_id)
     print_conf(InputData)
     problem=Darcy_CVFEM(InputData)
-    problem.solve(progress)
+    problem.solve_rtm(progress)
+
+@shared_task (bind=True)
+def solver_hp_rtm(progress,_id):
+    InputData = create_conf(_id)
+    print_conf(InputData)
+    problem=Darcy_CVFEM(InputData)
+    problem.solve_hprtm(progress)
 

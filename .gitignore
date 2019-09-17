@@ -10,6 +10,7 @@ Darcy
 migrations/
 Library/
 ASC Application/
+resources.md
 
 # SQLite database files
 ParaView-5.7.0

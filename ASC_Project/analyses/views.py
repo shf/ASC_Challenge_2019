@@ -23,7 +23,7 @@ from .forms import (StartApp, JobSubmitForm, MeshConfirmationForm, NewAnalysisFo
                     NewSectionForm, NewStepForm, ResultsForm, StatusForm)
 from .models import (BC, Analysis, Connectivity, Mesh, Nodes, Preform, Resin,
                      Results, Section, Step)
-from .solver.Analysis_solver import solve_darcy, print_conf, create_conf
+from .solver.Solver_Hub import Darcy_CVFEM, print_conf, create_conf, solver_rtm, solver_hp_rtm
 from .solver.Importers import Contour, MeshImport
 
 
@@ -353,7 +353,7 @@ def step_page(request, slug):
     else:
         init={'name':'Step_1', 'typ':0, 'endtime':1000, 'outputstep':0.01, 
             'maxiterations':10000, 'maxhaltsteps':10, 'minchangesaturation':0.001, 
-            'timescaling':5.0, 'fillthreshold':0.98}
+            'timescaling':5.0, 'fillthreshold':0.99}
     if request.method == 'POST':
         form = NewStepForm(request.POST, initial=init)
         if form.is_valid():
@@ -414,7 +414,7 @@ def submit_page(request, slug):
         if form.is_valid():
             val = form.cleaned_data
             if val['btn'] == 'submit':
-                solver = solve_darcy.delay(analysis.id)
+                solver = solver_rtm.delay(analysis.id)
                 Results.objects.update_or_create(analysis=analysis)
                 Results.objects.filter(analysis=analysis).update(processID=solver.id)
                 return redirect('status', slug=analysis.name)
