@@ -311,6 +311,8 @@ def preform_page(request, slug):
             preform.analysis = analysis
             val = form.cleaned_data
             if val['btn'] == "add":
+                if Preform.objects.filter(name=val['name']).exists():
+                    Preform.objects.filter(name=val['name']).delete()
                 preform.save()
                 form = NewPreformForm(
                     initial={'name': "Preform_{}".format(len(analysis.preform.all())+1)})
@@ -339,6 +341,9 @@ def section_page(request, slug):
             elif val['btn'] == "proceed":
                 if len(analysis.section.values('name').distinct()) == analysis.mesh.NumFaces:
                     return redirect('bc', slug=analysis.name)
+            elif val['btn'] == "Delete":
+                if Section.objects.filter(name=val['name']).exists():
+                    Section.objects.filter(name=val['name']).delete()
                 else:
                     messages.warning(request, 'Please assign all sections')
                     form = NewSectionForm(
