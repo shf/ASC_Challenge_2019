@@ -27,7 +27,7 @@ from .solver.Solver_Hub import Darcy_CVFEM, print_conf, create_conf, solver_rtm,
 from .solver.Importers import Contour, MeshImport
 
 
-def PlotlyPlot(nodes, table, NumFace):
+def PlotlyPlot(nodes, table):
 
     # nodes
     xn = []
@@ -38,20 +38,20 @@ def PlotlyPlot(nodes, table, NumFace):
         yn.append(node["y"])
         zn.append(node["z"])
 
-    # connectivity
+    # connectivity and face color
     ii = []
     jj = []
     kk = []
     FaceColor = []
-    colors = cl.to_rgb(cl.interp(cl.scales[str(5)]['div']['RdYlBu'],NumFace))
-    palette = {}
+    colors = cl.to_rgb(cl.interp(cl.scales[str(5)]['div']['RdYlBu'], len(table.values('FaceGroup').distinct())))
+    FacePalette = {}
     for n, item in enumerate(table.values('FaceGroup').distinct()):
-        palette [item['FaceGroup']] = colors[n]
+        FacePalette[item['FaceGroup']] = colors[n]
     for element in table.values():
         ii.append(element["N1"])
         jj.append(element["N2"])
         kk.append(element["N3"])
-        FaceColor.append(palette[element['FaceGroup']])
+        FaceColor.append(FacePalette[element['FaceGroup']])
 
     # define lines of each element
     x_line = []
@@ -81,10 +81,40 @@ def PlotlyPlot(nodes, table, NumFace):
             mode='lines',
             line=dict(color='rgb(50,50,50)', width=1.5)
         )
-    ],
-        layout=dict(
+    ]
+    )
+
+    colors = cl.to_rgb(cl.interp(cl.scales[str(5)]['qual']['Set2'], len(nodes.values('EdgeGroup').distinct())))
+    EdgePalette = {}
+    for n, item in enumerate(nodes.values('EdgeGroup').distinct()): # create required number of colors
+        EdgePalette[item['EdgeGroup']] = colors[n]
+
+    EdgeX={}
+    EdgeY={}
+    EdgeZ={}
+    for node in nodes.values(): # setting node groups in lists
+        if node['EdgeGroup'] != "_None":   
+            EdgeX.setdefault(node['EdgeGroup'], []).append(node["x"])
+            EdgeY.setdefault(node['EdgeGroup'], []).append(node["y"])
+            EdgeZ.setdefault(node['EdgeGroup'], []).append(node["z"])
+    for node in nodes.values('EdgeGroup').distinct():
+        if node['EdgeGroup'] != "_None":
+            figure.add_scatter3d(
+                x = EdgeX[node['EdgeGroup']],
+                y = EdgeY[node['EdgeGroup']],
+                z = EdgeZ[node['EdgeGroup']],
+                mode='markers',
+                marker=dict(
+                    color=EdgePalette[node['EdgeGroup']],
+                    size=5,
+                )
+
+            )
+    figure.update_layout(
+        dict(
             height=600,
             autosize=True,
+            showlegend=False,
             scene=dict(
                 xaxis=dict(
                     visible=True
@@ -103,11 +133,11 @@ def PlotlyPlot(nodes, table, NumFace):
     )
     )
 
-    return opy.plot(figure, auto_open=False, output_type='div'), palette
+    return opy.plot(figure, auto_open=False, output_type='div'), FacePalette, EdgePalette
 
-# dictionary for returning face color for each face in template
+# dictionary for returning face color for facets in template
 @register.filter
-def face_color(dictionary, key):    
+def facet_color(dictionary, key):
     return dictionary[key]
 
 # dictionary for sidebar switching
@@ -179,7 +209,7 @@ def home(request):
     if request.method == 'POST':
         form = StartApp(request.POST)
         if form.is_valid():
-            val=form.cleaned_data
+            val = form.cleaned_data
             if val['btn'] == 'run':
                 return redirect('apphome')
             elif val['btn'] == 'docs':
@@ -188,20 +218,21 @@ def home(request):
         form = StartApp()
     return render(request, 'home.html')
 
+
 def apphome(request):
-    analysis = Analysis.objects.all()
     if request.method == 'POST':
         form = NewAnalysisForm(request.POST)
         if form.is_valid():
             analysis = form.save(commit=False)
-            analysis.name=analysis.name.replace(" ", "_")
+            analysis.name = analysis.name.replace(" ", "_")
             analysis.save()
-
             return redirect('meshupload', slug=analysis.name)
     else:
-        form = NewAnalysisForm(initial={'name': "Analysis_{}".format(len(analysis))})
+        form = NewAnalysisForm(
+            initial={'name': "Analysis_{}".format(len(Analysis.objects.all())+1)})
     Page = SideBarPage().DicUpdate("")
-    return render(request, 'apphome.html', {'page': Page, 'form': form})
+    return render(request, 'apphome.html', {'page': Page, 'form': form, 'analysis': Analysis.objects.all()})
+
 
 def mesh_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
@@ -214,7 +245,8 @@ def mesh_page(request, slug):
                 Nodes.objects.filter(mesh_id=analysis.mesh.id).delete()
                 Connectivity.objects.filter(mesh_id=analysis.mesh.id).delete()
                 Mesh.objects.filter(analysis=analysis).delete()
-                os.remove(os.path.join(settings.MEDIA_ROOT, str(analysis.id), 'mesh.xml'))
+                os.remove(os.path.join(settings.MEDIA_ROOT,
+                                       str(analysis.id), 'mesh.xml'))
             Mesh.objects.update_or_create(MeshFile, analysis=analysis)
             mesh = get_object_or_404(Mesh, analysis_id=analysis.id)
 
@@ -222,7 +254,8 @@ def mesh_page(request, slug):
             mesh.name = str(mesh.address).split("/")[1].split(".")[0]
 
             # save mesh in xml format
-            MeshImp = MeshImport(os.path.join(settings.MEDIA_ROOT, str(mesh.address)))
+            MeshImp = MeshImport(os.path.join(
+                settings.MEDIA_ROOT, str(mesh.address)))
             MeshImp.UNVtoXMLConverter()
 
             # edges and faces should be extracted before calling for nodes and table
@@ -246,7 +279,8 @@ def mesh_page(request, slug):
 
             for key, value in faces.items():
                 for item in value:
-                    obj = Connectivity.objects.filter(ElmNum=item, mesh_id=mesh.id)
+                    obj = Connectivity.objects.filter(
+                        ElmNum=item, mesh_id=mesh.id)
                     obj.update(FaceGroup=key)
 
             return redirect('meshdisplay', slug=analysis.name)
@@ -261,7 +295,7 @@ def display_mesh(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     nodes = Nodes.objects.filter(mesh_id=analysis.mesh.id)
     table = Connectivity.objects.filter(mesh_id=analysis.mesh.id)
-    div, palette = PlotlyPlot(nodes, table, analysis.mesh.NumFaces)
+    div, FacePalette, EdgePalette = PlotlyPlot(nodes, table)
     if request.method == 'POST':
         form = MeshConfirmationForm(request.POST)
         if form.is_valid():
@@ -275,20 +309,23 @@ def display_mesh(request, slug):
     Page = SideBarPage().DicUpdate("mesh")
     dic = PageVariables(Page, form, analysis)
     dic['graph'] = div
-    dic['Edges'] = nodes.values('EdgeGroup').distinct()
-    dic['Faces'] = [face['FaceGroup'] for face in table.values('FaceGroup').distinct()]
-    dic['palette'] = palette
+    dic['Edges'] = [edge['EdgeGroup']
+                    for edge in nodes.values('EdgeGroup').distinct()]
+    dic['Faces'] = [face['FaceGroup']
+                    for face in table.values('FaceGroup').distinct()]
+    dic['FacePalette'] = FacePalette
+    dic['EdgePalette'] = EdgePalette
     return render(request, 'meshdisplay.html', dic)
 
 
 def resin_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
-    
+
     if Resin.objects.filter(analysis_id=analysis.id).exists():
         init = list(Resin.objects.filter(
             analysis_id=analysis.id).values())[0]
     else:
-        init={'name':'Resin_1', 'viscosity':0.02}
+        init = {'name': 'Resin_1', 'viscosity': 0.02}
     if request.method == 'POST':
         form = NewResinForm(request.POST, initial=init)
         if form.is_valid():
@@ -313,11 +350,14 @@ def preform_page(request, slug):
             if val['btn'] == "add":
                 if Preform.objects.filter(name=val['name']).exists():
                     Preform.objects.filter(name=val['name']).delete()
+                    messages.warning(request, "Preform '{}' is updated!".format(val['name']))
                 preform.save()
                 form = NewPreformForm(
                     initial={'name': "Preform_{}".format(len(analysis.preform.all())+1)})
             elif val['btn'] == "proceed":
                 return redirect('section', slug=analysis.name)
+            else:
+                Preform.objects.filter(id=val['btn']).delete()
     else:
         form = NewPreformForm(
             initial={'name': "Preform_{}".format(len(analysis.preform.all())+1)})
@@ -341,13 +381,13 @@ def section_page(request, slug):
             elif val['btn'] == "proceed":
                 if len(analysis.section.values('name').distinct()) == analysis.mesh.NumFaces:
                     return redirect('bc', slug=analysis.name)
-            elif val['btn'] == "Delete":
-                if Section.objects.filter(name=val['name']).exists():
-                    Section.objects.filter(name=val['name']).delete()
                 else:
                     messages.warning(request, 'Please assign all sections')
                     form = NewSectionForm(
                         request.POST, analysis=analysis, mesh=analysis.mesh)
+            else:
+                Section.objects.filter(id=val['btn']).delete()
+
     else:
         form = NewSectionForm(analysis=analysis, mesh=analysis.mesh)
     Page = SideBarPage().DicUpdate("section")
@@ -395,7 +435,7 @@ def bc_page(request, slug):
                         Update_name = bc.name
                 if exist:
                     messages.warning(
-                        request, 'Boundary condition updated!'.format(Update_name))
+                        request, "Boundary condition '{}' updated!".format(Update_name))
                     UpdateBC = BC.objects.get(id=Update_key)
                     UpdateBC.value = bc.value
                     UpdateBC.typ = bc.typ
@@ -417,6 +457,7 @@ def bc_page(request, slug):
     Page = SideBarPage().DicUpdate("bc")
     return render(request, 'bc.html', PageVariables(Page, form, analysis))
 
+
 def submit_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
     if request.method == 'POST':
@@ -426,32 +467,39 @@ def submit_page(request, slug):
             if val['btn'] == 'submit':
                 solver = solver_rtm.delay(analysis.id)
                 Results.objects.update_or_create(analysis=analysis)
-                Results.objects.filter(analysis=analysis).update(processID=solver.id)
+                Results.objects.filter(analysis=analysis).update(
+                    processID=solver.id)
                 return redirect('status', slug=analysis.name)
             elif val['btn'] == 'download_conf':
                 InputData = create_conf(analysis.id)
                 print_conf(InputData)
-                file_path = os.path.join(settings.MEDIA_ROOT, str(analysis.id), 'config.db')
+                file_path = os.path.join(
+                    settings.MEDIA_ROOT, str(analysis.id), 'config.db')
                 if os.path.exists(file_path):
                     with open(file_path, 'rb') as fh:
                         response = HttpResponse(fh.read(), content_type="xml")
-                        response['Content-Disposition'] = 'inline; filename=' + os.path.basename(file_path)
+                        response['Content-Disposition'] = 'inline; filename=' + \
+                            os.path.basename(file_path)
                         return response
                 raise Http404
             elif val['btn'] == 'download_UNV':
-                file_path = os.path.join(settings.MEDIA_ROOT, str(analysis.mesh.address))
+                file_path = os.path.join(
+                    settings.MEDIA_ROOT, str(analysis.mesh.address))
                 if os.path.exists(file_path):
                     with open(file_path, 'rb') as fh:
                         response = HttpResponse(fh.read(), content_type="unv")
-                        response['Content-Disposition'] = 'inline; filename=' + os.path.basename(file_path)
+                        response['Content-Disposition'] = 'inline; filename=' + \
+                            os.path.basename(file_path)
                         return response
                 raise Http404
             elif val['btn'] == 'download_XML':
-                file_path = os.path.join(settings.MEDIA_ROOT, str(analysis.id), 'mesh.xml')
+                file_path = os.path.join(
+                    settings.MEDIA_ROOT, str(analysis.id), 'mesh.xml')
                 if os.path.exists(file_path):
                     with open(file_path, 'rb') as fh:
                         response = HttpResponse(fh.read(), content_type="xml")
-                        response['Content-Disposition'] = 'inline; filename=' + os.path.basename(file_path)
+                        response['Content-Disposition'] = 'inline; filename=' + \
+                            os.path.basename(file_path)
                         return response
                 raise Http404
     else:
@@ -486,6 +534,7 @@ def status_page(request, slug):
         form = StatusForm()
     Page = SideBarPage().DicUpdate("submit")
     return render(request, 'status.html', PageVariables(Page, form, analysis))
+
 
 def result_page(request, slug):
     analysis = get_object_or_404(Analysis, name=slug)
