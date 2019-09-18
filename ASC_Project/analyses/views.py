@@ -572,7 +572,7 @@ def result_page(request, slug):
         if form.is_valid():
             val = form.cleaned_data
             if val['btn'] == 'download_message':
-                file_path = os.path.join(settings.MEDIA_ROOT, str(analysis.id), 'results', 'analysis.msg')
+                file_path = os.path.join(settings.MEDIA_ROOT, str(analysis.id), 'hidden_files', 'analysis.msg')
                 if os.path.exists(file_path):
                     with open(file_path, 'rb') as fh:
                         response = HttpResponse(fh.read(), content_type="msg")
@@ -583,7 +583,7 @@ def result_page(request, slug):
             elif val['btn'] == 'download_flowfront':
                 file_path_pvd = os.path.join(settings.MEDIA_ROOT, str(analysis.id), 'results', 'flowfrontvstime.pvd')
                 file_path_vtu = os.path.join(settings.MEDIA_ROOT, str(analysis.id), 'results', 'flowfrontvstime000000.vtu')
-                file_path_zip = os.path.join(settings.MEDIA_ROOT, str(analysis.id), 'results', 'flowfrontvstime.zip')
+                file_path_zip = os.path.join(settings.MEDIA_ROOT, str(analysis.id), 'hidden_files', 'flowfrontvstime.zip')
                 with ZipFile(file_path_zip,'w') as zip_file:
                     for result in [file_path_pvd, file_path_vtu]:
                         zip_file.write(result, os.path.basename(result))
@@ -597,7 +597,7 @@ def result_page(request, slug):
             elif val['btn'] == 'download_PSV':
                 file_path_h5 = os.path.join(settings.MEDIA_ROOT, str(analysis.id), 'results', 'fillingmedium.h5')
                 file_path_xdmf = os.path.join(settings.MEDIA_ROOT, str(analysis.id), 'results', 'fillingmedium.xdmf')
-                file_path_zip = os.path.join(settings.MEDIA_ROOT, str(analysis.id), 'results', 'fillingmedium.zip')
+                file_path_zip = os.path.join(settings.MEDIA_ROOT, str(analysis.id), 'hidden_files', 'fillingmedium.zip')
                 with ZipFile(file_path_zip,'w') as zip_file:
                     for result in [file_path_h5, file_path_xdmf]:
                         zip_file.write(result, os.path.basename(result))

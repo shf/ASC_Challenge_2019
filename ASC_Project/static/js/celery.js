@@ -41,8 +41,7 @@ var CeleryProgressBar = (function () {
 
         fetch(progressUrl).then(function(response) {
             response.json().then(function(data) {
-                if (data.state === 'PROGRESS') {
-                    setTimeout(updateProgress, pollInterval, progressUrl, options);
+                if (data.state === 'PROGRESS') { 
                     onProgress(progressBarElement, progressBarMessageElement, data.details);
                 }
                 if (data.state === 'ERROR') {
@@ -54,7 +53,9 @@ var CeleryProgressBar = (function () {
                 if (data.state === 'SUCCESS') {
                     onSuccess(progressBarElement, progressBarMessageElement, gifElement, data.details);
                 }
-                
+                if (data.state !== 'SUCCESS') {
+                    setTimeout(updateProgress, pollInterval, progressUrl, options);
+                }
             });
         });
     }
