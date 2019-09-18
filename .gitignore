@@ -11,6 +11,7 @@ migrations/
 Library/
 ASC Application/
 resources.md
+makegif/
 
 # SQLite database files
 ParaView-5.7.0

@@ -5,7 +5,7 @@ from .choice import TYPE_OF_ANALYSIS
 from .choice import TYPE_OF_BC
 from .choice import CONDITION_OF_BC
 
-from django.core.validators import FileExtensionValidator
+from django.core.validators import FileExtensionValidator, MaxValueValidator, MinValueValidator
 
 # this function defines a specific folder for the files required in analyses
 def analysis_directory_path(instance,filename):
@@ -56,7 +56,10 @@ class Connectivity(models.Model):
 
 class Resin(models.Model):
     name = models.CharField(max_length=30, help_text='Name of Resin')
-    viscosity = models.FloatField(help_text='Enter a number for viscosity')
+    viscosity = models.FloatField(help_text='Enter a number for viscosity', 
+            validators=[
+            MinValueValidator(0),
+        ])
     analysis = models.OneToOneField(Analysis, related_name='resin', on_delete=models.CASCADE)
 
     def __str__(self):
@@ -64,11 +67,27 @@ class Resin(models.Model):
 
 class Preform(models.Model):
     name = models.CharField(max_length=30, help_text='Name of Preform')
-    thickness = models.FloatField(default=0.01, help_text='Thickness')
-    K11 = models.FloatField(default=1e-10, help_text='Enter a number for K11')
-    K12 = models.FloatField(default=0, help_text='Enter a number for K12')
-    K22 = models.FloatField(default=2e-10, help_text='Enter a number for K22')
-    phi = models.FloatField(default=0.5, help_text='Enter a number for volume fraction')
+    thickness = models.FloatField(default=0.01, help_text='Thickness of preform', 
+            validators=[
+            MinValueValidator(0),
+        ])
+    K11 = models.FloatField(default=1e-10, help_text='Enter a number for K11 (permeability in the 1st principal direction)', 
+            validators=[
+            MinValueValidator(0),
+        ])
+    K12 = models.FloatField(default=0, help_text='Enter a number for K12', 
+            validators=[
+            MinValueValidator(0),
+        ])
+    K22 = models.FloatField(default=2e-10, help_text='Enter a number for K22 (permeability in the 2nd principal direction)', 
+            validators=[
+            MinValueValidator(0),
+        ])
+    phi = models.FloatField(default=0.5, help_text='Enter a value between 0 and 1 for the volume fraction of fibers', 
+            validators=[
+            MaxValueValidator(1),
+            MinValueValidator(0)
+        ])
     analysis = models.ForeignKey(Analysis, related_name='preform', on_delete=models.CASCADE)
 
     def __str__(self):
@@ -78,7 +97,11 @@ class Preform(models.Model):
 class Section(models.Model):
     name = models.CharField(max_length=30)
     preform = models.ForeignKey(Preform, related_name='preform', on_delete=models.SET_NULL, null=True)
-    rotate = models.FloatField(default=0, help_text='Degree of rotation of 1st axis with respect to x axis')
+    rotate = models.FloatField(default=0, help_text='Degree of rotation of 1st axis with respect to x axis', 
+            validators=[
+            MinValueValidator(0),
+            MaxValueValidator(180),
+        ])
     analysis = models.ForeignKey(Analysis, related_name='section', on_delete=models.CASCADE)
 
     def __str__(self):
@@ -87,11 +110,26 @@ class Section(models.Model):
 class Step(models.Model):
     name = models.CharField(max_length=30)
     typ = models.CharField(max_length=30, choices=TYPE_OF_ANALYSIS)
-    endtime = models.FloatField()
-    outputstep = models.FloatField()
-    maxiterations = models.IntegerField()
-    maxhaltsteps = models.IntegerField()
-    minchangesaturation = models.FloatField()
+    endtime = models.FloatField(
+            validators=[
+            MinValueValidator(0),
+        ])
+    outputstep = models.FloatField(
+            validators=[
+            MinValueValidator(0),
+        ])
+    maxiterations = models.IntegerField(
+            validators=[
+            MinValueValidator(0),
+        ])
+    maxhaltsteps = models.IntegerField(
+            validators=[
+            MinValueValidator(0),
+        ])
+    minchangesaturation = models.FloatField(
+            validators=[
+            MinValueValidator(0),
+        ])
     timescaling = models.FloatField()
     fillthreshold = models.FloatField()
     analysis = models.OneToOneField(Analysis, related_name='step', on_delete=models.CASCADE)
