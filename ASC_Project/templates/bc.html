@@ -9,81 +9,92 @@
 {{ analysis.name }}
 {% endblock %}
 
-
-{% block PageName %}
-Boundary conditions
-{% endblock %}
-
 {% block content %}
 
-<h6 class="text-secondary">
-    Assign a boundary type to each edge.
-    Consider the following guideline for assigning boundary types:
-    <ul>
-        <li>You should assign at least one "Inlet" boundary.</li>
-        <li>You can enforce inlet boundaries with pressure or flow-rate.</li>
-        <li>Since flow front interact with zero gauge pressure, the inlet and outlet pressures should be gauge.</li>
-        <li>You may or may not assign an outlet boundary. Assigning outlet boundary is a challenge in mold-filling analysis, since dry
-          areas can remain after filling the outlet. You can enforce termination rules later.</li>
-        <li>The "Wall" boundaries do not let resin move out of the system.</li>
-      </ul>
-    <br>
-</h6>
+<div class="row">
+    <div class="col sm-6 ">
+        <div class="card shadow mb-4">
+            <!-- Card Header  -->
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    Boundary Conditions:
+                </h6>
+            </div>
+            <!-- Card Body -->
+            <div class="card-body">
+                <h6 class="text-secondary">
+                    Assign a boundary type to each edge.
+                    Consider the following guideline for assigning boundary types:
+                    <ul>
+                        <li>You should assign at least one "Inlet" boundary.</li>
+                        <li>You can enforce inlet boundaries with pressure or flow-rate.</li>
+                        <li>Since flow front interact with zero gauge pressure, the inlet and outlet pressures should be
+                            gauge.</li>
+                        <li>You may or may not assign an outlet boundary. Assigning outlet boundary is a challenge in
+                            mold-filling analysis, since dry
+                            areas can remain after filling the outlet. You can enforce termination rules later.</li>
+                        <li>The "Wall" boundaries do not let resin move out of the system.</li>
+                    </ul>
+                    <br>
+                </h6>
+                {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} text-center" role="alert">
+                    {{ message }}
+                </div>
+                {% endfor %}
+                {% endif %}
+                <form method="post" validate>
+                    {% csrf_token %}
+                    {% include 'includes/form.html' %}
+                    <button type="submit" class="btn btn-success" name="btn" value="add">Assign BC</button>
+                    <button type="submit" class="btn btn-success" name="btn" value="proceed">Proceed to Steps</button>
+                </form>
+            </div>
+        </div>
+        <!-- End of card body -->
+    </div>
 
-<div class="container-fluid">
-  {% if messages %}
-  <div class="row">
-    <div class="col-sm-12">
-      {% for message in messages %}
-      <div class="alert alert-{{ message.tags }} text-center" role="alert">
-        {{ message }}
-      </div>
-      {% endfor %}
+    <!-- End of card -->
+
+    <div class="col  sm-6">
+        <div class="card shadow mb-4">
+            <!-- Card Header  -->
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    Assigned Boundary Conditions:
+                </h6>
+            </div>
+            <!-- Card Body -->
+            <div class="card-body">
+                <div class="d-flex">
+                    <dt class="col-sm-3">Name</dt>
+                    <dt class="col-sm-3">Type</dt>
+                    <dt class="col-sm-3">Condition</dt>
+                    <dt class="col-sm-3">Value</dt>
+                </div>
+                <!-- divider -->
+                <hr class="sidebar-divider">
+
+                {% for items in bc %}
+                <div class="d-flex">
+                    <dd class="col-sm-3">{{items.name}}</dd>
+                    <dd class="col-sm-3">{{items.typ}}</dd>
+                    {% if items.typ == 'Wall' %}
+                    <dd class="col-sm-3">-</dd>
+                    <dd class="col-sm-3">-</dd>
+                    {% else %}
+                    <dd class="col-sm-3">{{items.condition}}</dd>
+                    <dd class="col-sm-3">{{items.value}}</dd>
+                    {%endif%}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        <!-- End of card -->
     </div>
-  </div>
-  {% endif %}
-  <div class="row">
-    <div class="col-4">
-      <form method="post" validate>
-        {% csrf_token %}
-        {% include 'includes/form.html' %}
-        <button type="submit" class="btn btn-success" name="btn" value="add">Assign BC</button>
-        <button type="submit" class="btn btn-success" name="btn" value="proceed">Proceed to Jobs</button>
-      </form>
-    </div>
-    <div class="col-1">
-    </div>
-    <div class="col-7">
-      <h4>Assigned Boundary Conditions:</h4>
-      <br>
-      <table class="table table-striped">
-        <thead class="thead-inverse">
-          <tr>
-            <th>Name</th>
-            <th>Type</th>
-            <th>Condition</th>
-            <th>Value</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for r in bc %}
-          <tr>
-            <td>{{r.name}}</td>
-            <td>{{r.typ}}</td>
-            {% if r.typ == 'Wall' %}
-            <td>-</td>
-            <td>-</td>
-            {% else %}
-            <td>{{r.condition}}</td>
-            <td>{{r.value}}</td>
-            {%endif%}
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
 </div>
+
 
 <script>
   // Ideally this script (javascript code) would be in the HEAD of your page

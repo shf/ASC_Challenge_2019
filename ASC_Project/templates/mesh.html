@@ -8,57 +8,64 @@
 {{ analysis.name }}
 {% endblock %}
 
-
-{% block PageName %}
-Mesh
-{% endblock %}
-
 {% block content %}
 
-<h6 class="text-secondary">
-  <br>
-  You can upload the mesh here.
-  <br>
-  Composites on Clouds currently supports Universal Mesh (.unv) files. You can create them with SALOME,
-  an open source plaftorm for numerical simulation. You should define different sections and node-groups in SALOME.
-  You can later use them to apply boundary conditions and section properties in Composites on Clouds.
+<div class="card shadow mb-4">
+  <!-- Card Header  -->
+  <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+    <h6 class="m-0 font-weight-bold text-primary">
+      Upload Mesh:
+    </h6>
+  </div>
+  <!-- Card Body -->
+  <div class="card-body">
+    <h6 class="text-secondary">
+      <br>
+      You can upload the mesh here.
+      <br>
+      Composites on Clouds currently supports Universal Mesh (.unv) files. You can create them with
+      SALOME,
+      an open source plaftorm for numerical simulation. You should define different sections and
+      node-groups in SALOME.
+      You can later use them to apply boundary conditions and section properties in Composites on Clouds.
 
-  <br>
-  <br>
-  Since the 1st principal coordinate is assumed to be in the X direction, the mesh should be created in X-Y plane, with
-  height of the part in the Z direction.
-  <br>
-  <br>
-  More information about the steps to create the mesh, partitions, and group-sets can be found in SALOME Documentation.
-  <br>
-  <br>
-  Upload the mesh from your system:
-  <br>
-</h6>
+      <br>
+      <br>
+      Since the 1st principal coordinate is assumed to be in the X direction, the mesh should be created
+      in X-Y plane, with
+      height of the part in the Z direction.
+      <br>
+      <br>
+      More information about the steps to create the mesh, partitions, and group-sets can be found in
+      SALOME Documentation.
+      <br>
+    </h6>
 
-<form id="UploadForm" method="post" enctype="multipart/form-data">
+    <form id="UploadForm" method="post" enctype="multipart/form-data">
 
-  {% csrf_token %}
-  {% include 'includes/form.html' %}
+      {% csrf_token %}
+      {% include 'includes/form.html' %}
 
-  <button id="btnSubmit" type="submit" class="btn btn-success"><span class="ui-button-text">Upload</span></button>
-</form>
-<script>
-  // this is executed once when the page loads
-  $(document).ready(function () {
+      <button id="btnSubmit" type="submit" class="btn btn-success"><span class="ui-button-text">Upload</span></button>
+    </form>
+    <script>
+      // this is executed once when the page loads
+      $(document).ready(function () {
 
-    // check if the form is submitted
-    $("#btnSubmit").click(function () {
+        // check if the form is submitted
+        $("#btnSubmit").click(function () {
 
-      // submit the form
-      $("#UploadForm").submit();
+          // submit the form
+          $("#UploadForm").submit();
 
-      //disable the submit button and show uploading animation
-      $("#btnSubmit").addClass('disabled');
-      $("#btnSubmit").attr("disabled", true);
-      $("#btnSubmit").html($('<i/>',{class:'fa fa-spinner fa-pulse'})).append(' Uploading');
-    });
-    });
-</script>
-
+          //disable the submit button and show uploading animation
+          $("#btnSubmit").addClass('disabled');
+          $("#btnSubmit").attr("disabled", true);
+          $("#btnSubmit").html($('<i/>', { class: 'fa fa-spinner fa-pulse' })).append(' Uploading');
+        });
+      });
+    </script>
+  </div>
+  <!-- End of card body -->
+</div>
 {% endblock %}

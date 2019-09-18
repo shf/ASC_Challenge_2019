@@ -9,69 +9,77 @@
 {{ analysis.name }}
 {% endblock %}
 
-
-
-{% block PageName %}
-Section
-{% endblock %}
-
-
-
 {% block content %}
-
-<h6 class="text-secondary">
-    You can assign more than one preform to each section.
-    <br>
-    The order of preforms is not important in this analysis.
-    <br>
-    The permeability of each section will be derived using the weight-averaged permeability of the preforms of the section.
-    <br>
-</h6>
-
-<div class="container-fluid">
-  {% if messages %}
-  <div class="row">
-    <div class="col-sm-12">
-      {% for message in messages %}
-      <div class="alert alert-{{ message.tags }} text-center" role="alert">
-        {{ message }}
+<div class="row">
+  <div class="col sm-6 ">
+    <div class="card shadow mb-4">
+      <!-- Card Header  -->
+      <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+        <h6 class="m-0 font-weight-bold text-primary">
+          Section:
+        </h6>
       </div>
-      {% endfor %}
-    </div>
-  </div>
-  {% endif %}
-  <div class="row">
-    <div class="col-4">
-      <form method="post" validate>
-        {% csrf_token %}
-        {% include 'includes/form.html' %}
-        <button type="submit" class="btn btn-success" name="btn" value="add">Assign Section</button>
-        <button type="submit" class="btn btn-success" name="btn" value="proceed">Proceed to BCs</button>
-      </form>
-    </div>
-    <div class="col-1">
-    </div>
-    <div class="col-7">
-      <h4>Assigned Sections:</h4>
-      <table class="table table-striped">
-        <thead class="thead-inverse">
-          <tr>
-            <th>Section</th>
-            <th>Preforms</th>
-            <th>Rotate</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for r in sections %}
-          <tr>
-            <td>{{r.name}}</td>
-            <td>{{r.preform}}</td>
-            <td>{{r.rotate}}</td>
-          </tr>
+      <!-- Card Body -->
+      <div class="card-body">
+        <h6 class="text-secondary">
+          You can assign more than one preform to each section.
+          <br>
+          The order of preforms is not important in this analysis.
+          <br>
+          The permeability of each section will be derived using the weight-averaged permeability of the
+          preforms of the section.
+          <br>
+        </h6>
+          {% if messages %}
+          {% for message in messages %}
+          <div class="alert alert-{{ message.tags }} text-center" role="alert">
+            {{ message }}
+          </div>
           {% endfor %}
-        </tbody>
-      </table>
+          {% endif %}
+          <form id="form" method="post" validate>
+            {% csrf_token %}
+            {% include 'includes/form.html' %}
+            <button type="submit" class="btn btn-success" name="btn" value="add">Assign Section</button>
+            <button type="submit" class="btn btn-success" name="btn" value="proceed">Proceed to BCs</button>
+          
+      </div>
     </div>
+    <!-- End of card body -->
+  </div>
+
+  <!-- End of card -->
+
+  <div class="col  sm-6">
+    <div class="card shadow mb-4">
+      <!-- Card Header  -->
+      <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+        <h6 class="m-0 font-weight-bold text-primary">
+          Assigned Sections:
+        </h6>
+      </div>
+      <!-- Card Body -->
+      <div class="card-body">
+        <div class="d-flex">
+          <dt class="col-sm-4">Section</dt>
+          <dt class="col-sm-4">Preforms</dt>
+          <dt class="col-sm-4">Rotation</dt>
+        </div>
+        <!-- divider -->
+        <hr class="sidebar-divider">
+
+        {% for items in sections %}
+        <div class="d-flex">
+          <dd class="col-sm-4">{{items.name}}</dd>
+          <dd class="col-sm-4">{{items.preform}}</dd>
+          <dd class="col-sm-3">{{items.rotate}}</dd>
+          <dd class="col-sm-3"><button type="submit" name="btn" value="{{items.id}}" style="background: none!important;border: none;padding: 0!important;cursor: pointer;"><i class="far fa-times-circle"></i></button></dd>
+        </div>
+        {% endfor %}
+      </form>
+      </div>
+    </div>
+    <!-- End of card -->
   </div>
 </div>
 {% endblock %}
