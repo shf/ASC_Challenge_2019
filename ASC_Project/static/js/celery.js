@@ -46,15 +46,12 @@ var CeleryProgressBar = (function () {
                     onProgress(progressBarElement, progressBarMessageElement, data.details);
                 }
                 if (data.state === 'ERROR') {
-                    setTimeout(updateProgress, pollInterval, progressUrl, options);
                     onError(progressBarElement, progressBarMessageElement, gifElement, data.details);
                 }
                 if (data.state === 'TERMINATE') {
-                    setTimeout(updateProgress, pollInterval, progressUrl, options);
                     onTerminate(progressBarElement, progressBarMessageElement, gifElement, data.details);
                 } 
                 if (data.state === 'SUCCESS') {
-                    setTimeout(updateProgress, pollInterval, progressUrl, options);
                     onSuccess(progressBarElement, progressBarMessageElement, gifElement, data.details);
                 } 
                 
