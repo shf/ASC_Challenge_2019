@@ -759,6 +759,7 @@ class Darcy_CVFEM():
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
                 self._flowfrontfile << ffvstimeh
+                time.sleep(3)
                 return 0
             elif numerator == self._max_nofiteration:
                 for i in set(range(self._num_nodes)) - available_nodes:
@@ -768,6 +769,7 @@ class Darcy_CVFEM():
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
                 self._flowfrontfile << ffvstimeh
+                time.sleep(3)
                 return 0
             elif t > TEND:
                 for i in set(range(self._num_nodes)) - available_nodes:
@@ -778,6 +780,7 @@ class Darcy_CVFEM():
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
                 self._flowfrontfile << ffvstimeh
+                time.sleep(3)
                 return 0
             elif self._termination_para > self._Number_consecutive_steps:
                 for i in set(range(self._num_nodes)) - available_nodes:
@@ -788,6 +791,7 @@ class Darcy_CVFEM():
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
                 self._flowfrontfile << ffvstimeh
+                time.sleep(3)
                 return 0
             elif self._Outlet_filled == True and self._termination_type == 'Fill the outlet':
                 for i in set(range(self._num_nodes)) - available_nodes:
@@ -797,6 +801,7 @@ class Darcy_CVFEM():
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
                 self._flowfrontfile << ffvstimeh
+                time.sleep(3)
                 return 0
 
             facet_on_flow_front = set()

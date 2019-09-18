@@ -53,7 +53,7 @@ var CeleryProgressBar = (function () {
                 } 
                 if (data.state === 'SUCCESS') {
                     onSuccess(progressBarElement, progressBarMessageElement, gifElement, data.details);
-                } 
+                }
                 
             });
         });

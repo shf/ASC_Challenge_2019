@@ -19,4 +19,36 @@
         <iframe class="embed-responsive-item" src={{paraview|safe}} allowfullscreen></iframe>
 </div>
 
+<form method="post" id="download_form" validate>
+{% csrf_token %}
+<table class="table">
+        <tbody>
+                <tr>
+                <input type="text" name="btn" value="" id="change_value">
+                <td><button id="download_message" class="btn btn-success"  value="download_message">Download Message file</button></td>
+                <td><button id="download_flowfront" class="btn btn-success"  value="download_flowfront">Download Flow-Front file</button></td>
+                <td><button id="download_PSV" class="btn btn-success"  value="download_PSV">Download P-S-V file</button></td>
+                </tr>
+        </tbody>
+</table>
+</form>
+
+<script type="text/javascript">
+        $('#change_value').hide();
+        $("#download_message").click(function() {
+                $("#change_value").val("download_message");
+                $("#download_form").submit();
+                setTimeout(function(){window.location.reload();},5000)
+        });
+        $("#download_flowfront").click(function() {
+                $("#change_value").val("download_flowfront");
+                $("#download_form").submit();
+                setTimeout(function(){window.location.reload();},5000)
+        });
+        $("#download_PSV").click(function() {
+                $("#change_value").val("download_PSV");
+                $("#download_form").submit();
+                setTimeout(function(){window.location.reload();},5000)
+        });
+</script>
 {% endblock %}
