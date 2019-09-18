@@ -10,65 +10,86 @@
 {% endblock %}
 
 
-{% block PageName %}
-Preform
-{% endblock %}
-
 {% block content %}
 
-<div class="container-fluid">
-  <div class="row">
-    <div class="col-4">
-      <form method="post" validate>
-        <h4>New preform:</h4>
+<div class="row">
+    <div class="col sm-6 ">
+        <div class="card shadow mb-4">
+            <!-- Card Header  -->
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    New preform:
+                </h6>
+            </div>
+            <!-- Card Body -->
+            <div class="card-body">
+                <h6 class="text-secondary">
+                    <br>
+                    Create a new layer for each of your preforms.
+                    <br>
+                    Assume the global X axis is the 1st principal direction.
+                    <br>
+                </h6>
+                {% if messages %}
+                {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} text-center" role="alert">
+                  {{ message }}
+                </div>
+                {% endfor %}
+                {% endif %}
+                <form method="post" validate>
+                <br>
+                {% csrf_token %}
+                {% include 'includes/form.html' %}
+                <button type="submit" class="btn btn-success" name="btn" value="add">Add or update a layer</button>
+                <button type="submit" class="btn btn-success" name="btn" value="proceed">Proceed to section</button>
+                <br>
+                <br>
+                
+            </div>
+        </div>
+        <!-- End of card body -->
+    </div>
 
-        <h6 class="text-secondary">
-            <br>
-            Create a new layer for each of your preforms. 
-            <br>
-            Assume the global X axis is the 1st principal direction.
-            <br>
-        </h6>
+    <!-- End of card -->
 
-        <br>
-        {% csrf_token %}
-        {% include 'includes/form.html' %}
-        <button type="submit" class="btn btn-success" name="btn" value="add">Add or update a layer</button>
-        <button type="submit" class="btn btn-success" name="btn" value="proceed">Proceed to section</button>
-        <br>
-        <br>
-      </form>
+    <div class="col  sm-6">
+        <div class="card shadow mb-4">
+            <!-- Card Header  -->
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    Created Preforms:
+                </h6>
+            </div>
+            <!-- Card Body -->
+            <div class="card-body">
+                <div class="d-flex">
+                    <dt class="col-sm-2">Name</dt>
+                    <dt class="col-sm-2">Thickness</dt>
+                    <dt class="col-sm-1">Phi</dt>
+                    <dt class="col-sm-2">K11</dt>
+                    <dt class="col-sm-2">K12</dt>
+                    <dt class="col-sm-2">K22</dt>
+                </div>
+                <!-- divider -->
+                <hr class="sidebar-divider">
+                
+                {% for items in preforms %}
+                <div class="d-flex">
+                    <dd class="col-sm-2">{{items.name}}</dd>
+                    <dd class="col-sm-2">{{items.thickness}}</dd>
+                    <dd class="col-sm-1">{{items.phi}}</dd>
+                    <dd class="col-sm-2">{{items.K11}}</dd>
+                    <dd class="col-sm-2">{{items.K12}}</dd>
+                    <dd class="col-sm-2">{{items.K22}}</dd>
+                    <dd class="col-sm-1"><button type="submit" name="btn" value="{{items.id}}" style="background: none!important;border: none;padding: 0!important;cursor: pointer;"><i class="far fa-times-circle"></i></button></dd>
+                </div>
+                {% endfor %}
+            </form>
+            </div>
+        </div>
+        <!-- End of card -->
     </div>
-    <div class="col-1">
-    </div>
-    <div class="col-7">
-      <h4>Created Preforms:</h4>
-      <br>
-      <table class="table table-striped">
-        <thead class="thead-inverse">
-          <tr>
-            <th>Name</th>
-            <th>Thickness</th>
-            <th>K11</th>
-            <th>K12</th>
-            <th>K22</th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for r in preforms %}
-          <tr>
-            <td>{{r.name}}</td>
-            <td>{{r.thickness}}</td>
-            <td>{{r.K11}}</td>
-            <td>{{r.K12}}</td>
-            <td>{{r.K22}}</td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    </div>
-  </div>
 </div>
-
 
 {% endblock %}

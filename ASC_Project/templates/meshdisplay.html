@@ -8,74 +8,84 @@
 {{ analysis.name }}
 {% endblock %}
 
-
-{% block PageName %}
-Mesh
-{% endblock %}
-
 {% block content %}
-
-<!-- <h6 class="text-secondary">
-    <br> 
-    The mesh has been processed and is shown below:
-    <br>
-  </h6> -->
-
 <div class="row">
-  <div class="col-9">
-    {% if graph %}
-    {{ graph|safe }}
-    {% endif %}
+  <div class="col col-sm-9">
+    <div class="card shadow">
+      <!-- Card Header  -->
+      <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+        <h6 class="m-0 font-weight-bold text-primary">
+          Mesh:
+        </h6>
+      </div>
+      <!-- Card Body -->
+      <div class="card-body">
+
+        {% if graph %}
+        {{ graph|safe }}
+        {% endif %}
+        <div class="row">
+          <form method="post" validate>
+            {% csrf_token %}
+            {% include 'includes/form.html' %}
+            <div>
+              <button type="submit" class="btn btn-success" name="btn" value="upload">Upload
+                again</button>
+              <button type="submit" class="btn btn-success" name="btn" value="confirm">Confirm</button>
+            </div>
+          </form>
+        </div>
+      </div>
+      <!-- End of card body -->
+    </div>
   </div>
-  <div class="col-3">
-    <table class="table table-striped">
-      <thead class="thead-inverse">
-        <tr>
-          <th>Edges</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for r in Edges %}
-        {% if r.EdgeGroup != "_None" %}
-        <tr>
-          <td>{{r.EdgeGroup}}</td>
-        </tr>
+  <!-- End of card -->
+
+  <div class="col col-sm-3">
+    <div class="card shadow mb-4">
+      <!-- Card Header  -->
+      <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+        <h6 class="m-0 font-weight-bold text-primary">
+          Edges:
+        </h6>
+      </div>
+      <!-- Card Body -->
+      <div class="card-body" style="overflow-y: auto;max-height: 530px;">
+        {% for name in Edges %}
+        {% if name != "_None" %}
+        <div class="d-flex">
+          <dt class="col-sm-6">{{name}}</dt>
+          <dd class="col-sm-6"><i class="fas fa-stop fa-2x" style="color:{{EdgePalette|facet_color:name}}"></i></dd>
+        </div>
+        <!-- divider -->
+        <hr class="sidebar-divider">
         {% endif %}
         {% endfor %}
-      </tbody>
-    </table>
-    <br>
-    <table class="table table-striped">
-      <thead class="thead-inverse">
-        <tr>
-          <th>Faces</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for name in Faces %}
-        <tr>
-          <td>{{name}}</td>
-          <td><i class="fas fa-stop fa-2x" style="color:{{palette|face_color:name}}"></i> </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  <div class="col-4">
-    <form method="post" validate>
-      <!-- <h6 class="text-secondary">
-        <br>
-        Confirm if the mesh is correct and the created Edges and Faces are shown in the table.
-        <br>
-      </h6> -->
-
-      {% csrf_token %}
-      {% include 'includes/form.html' %}
-      <div>
-        <button type="submit" class="btn btn-success" name="btn" value="upload">Upload again</button>
-        <button type="submit" class="btn btn-success" name="btn" value="confirm">Confirm</button>
       </div>
-    </form>
+    </div>
+    <!-- End of card -->
+
+    <div class="card shadow mb-4">
+      <!-- Card Header  -->
+      <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+        <h6 class="m-0 font-weight-bold text-primary">
+          Faces:
+        </h6>
+      </div>
+      <!-- Card Body -->
+      <div class="card-body" style="overflow-y: auto;max-height: 530px;">
+        {% for name in Faces %}
+        <div class="d-flex">
+          <dt class="col-sm-6">{{name}}</dt>
+          <dd class="col-sm-6"><i class="fas fa-stop fa-2x" style="color:{{FacePalette|facet_color:name}}"></i></dd>
+        </div>
+        <!-- divider -->
+        <hr class="sidebar-divider">
+        {% endfor %}
+      </div>
+    </div>
   </div>
+  <!-- End of card -->
 </div>
+
 {% endblock %}

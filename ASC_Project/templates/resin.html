@@ -2,25 +2,32 @@
 
 
 {% block title %}
-  {{ analysis.name }} - {{ block.super }}
+{{ analysis.name }} - {{ block.super }}
 {% endblock %}
 
-
-{% block PageName %}
-  Resin Material Property
-{% endblock %}
 {% block content %}
+<div class="card shadow mb-4">
+  <!-- Card Header  -->
+  <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+    <h6 class="m-0 font-weight-bold text-primary">
+      Resin Material Property:
+    </h6>
+  </div>
+  <!-- Card Body -->
+  <div class="card-body">
+    <h6 class="text-secondary">
+      Enter the resin properties in the following form:
+      <br>
+      <br>
+    </h6>
 
-<h6 class="text-secondary">
-    Enter the resin properties in the following form:
-    <br>
-    <br>
-</h6>
-
-<form method="post" validate>
-    {% csrf_token %}  
-    {% include 'includes/form.html' %}
-    <button type="submit" class="btn btn-success">Create</button>
-</form>
+    <form method="post" validate>
+      {% csrf_token %}
+      {% include 'includes/form.html' %}
+      <button type="submit" class="btn btn-success">Create</button>
+    </form>
+  </div>
+  <!-- End of card body -->
+</div>
 
 {% endblock %}
