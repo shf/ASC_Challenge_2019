@@ -16,6 +16,8 @@ from django.core.files.storage import FileSystemStorage
 from django.http import HttpResponse, Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.template.defaulttags import register
+from zipfile import ZipFile
+from django.utils.encoding import smart_str
 
 
 from .forms import (StartApp, JobSubmitForm, MeshConfirmationForm, NewAnalysisForm,
@@ -554,9 +556,9 @@ def result_page(request, slug):
     os.system('rm -f {}/ParaView-5.7.0/viz-logs/*.txt'.format(directory))
     # run new server with modified configuration
     p = subprocess.Popen([directory + '/ParaView-5.7.0/bin/pvpython',
-                          directory + '/ParaView-5.7.0/lib/python3.7/site-packages/wslink/launcher.py',
-                          directory + '/ParaView-5.7.0/launcher.config'],
-                         )
+                        directory + '/ParaView-5.7.0/lib/python3.7/site-packages/wslink/launcher.py',
+                        directory + '/ParaView-5.7.0/launcher.config'],
+                        )
     time.sleep(2)
     # save the process id to database, might be useful for concurrent visulization
     analysis.results.processID = p.pid
@@ -565,6 +567,49 @@ def result_page(request, slug):
     form = "form"
     dic = PageVariables(Page, form, analysis)
     dic['paraview'] = "http://127.0.0.1:8080/"
+    if request.method == 'POST':
+        form = ResultsForm(request.POST)
+        if form.is_valid():
+            val = form.cleaned_data
+            if val['btn'] == 'download_message':
+                file_path = os.path.join(settings.MEDIA_ROOT, str(analysis.id), 'hidden_files', 'analysis.msg')
+                if os.path.exists(file_path):
+                    with open(file_path, 'rb') as fh:
+                        response = HttpResponse(fh.read(), content_type="msg")
+                        response['Content-Disposition'] = 'attachment; filename=' + os.path.basename(file_path)
+                        response['X-Sendfile'] = smart_str(file_path)
+                        return response
+                raise Http404
+            elif val['btn'] == 'download_flowfront':
+                file_path_pvd = os.path.join(settings.MEDIA_ROOT, str(analysis.id), 'results', 'flowfrontvstime.pvd')
+                file_path_vtu = os.path.join(settings.MEDIA_ROOT, str(analysis.id), 'results', 'flowfrontvstime000000.vtu')
+                file_path_zip = os.path.join(settings.MEDIA_ROOT, str(analysis.id), 'hidden_files', 'flowfrontvstime.zip')
+                with ZipFile(file_path_zip,'w') as zip_file:
+                    for result in [file_path_pvd, file_path_vtu]:
+                        zip_file.write(result, os.path.basename(result))
+                if os.path.exists(file_path_zip):
+                    with open(file_path_zip, 'rb') as fh:
+                        response = HttpResponse(fh.read(), content_type="zip")
+                        response['Content-Disposition'] = 'attachment; filename=' + os.path.basename(file_path_zip)
+                        response['X-Sendfile'] = smart_str(file_path_zip)
+                        return response
+                raise Http404
+            elif val['btn'] == 'download_PSV':
+                file_path_h5 = os.path.join(settings.MEDIA_ROOT, str(analysis.id), 'results', 'fillingmedium.h5')
+                file_path_xdmf = os.path.join(settings.MEDIA_ROOT, str(analysis.id), 'results', 'fillingmedium.xdmf')
+                file_path_zip = os.path.join(settings.MEDIA_ROOT, str(analysis.id), 'hidden_files', 'fillingmedium.zip')
+                with ZipFile(file_path_zip,'w') as zip_file:
+                    for result in [file_path_h5, file_path_xdmf]:
+                        zip_file.write(result, os.path.basename(result))
+                if os.path.exists(file_path_zip):
+                    with open(file_path_zip, 'rb') as fh:
+                        response = HttpResponse(fh.read(), content_type="zip")
+                        response['Content-Disposition'] = 'attachment; filename=' + os.path.basename(file_path_zip)
+                        response['X-Sendfile'] = smart_str(file_path_zip)
+                        return response
+                raise Http404
+    else:
+        form = ResultsForm()
     return render(request, 'result.html', dic)
 
 

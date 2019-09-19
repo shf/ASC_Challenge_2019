@@ -54,14 +54,17 @@ class Darcy_CVFEM():
         return None
 
     def _logging(self, _data_handling):
-        directory = _data_handling['folder_address'] + "/results/"
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-        logging.basicConfig(level=logging.DEBUG, filename=directory + "debug.log" , filemode="a+",
+        directory_r = _data_handling['folder_address'] + "/results/"
+        directory_h = _data_handling['folder_address'] + "/hidden_files/"
+        if not os.path.exists(directory_r):
+            os.makedirs(directory_r)
+        if not os.path.exists(directory_h):
+            os.makedirs(directory_h)
+        logging.basicConfig(level=logging.DEBUG, filename=directory_h + "/debug.log" , filemode="a+",
             format="%(asctime)-15s %(levelname)-8s %(message)s")
         logging.info("The analysis has been submitted") 
 
-        self._message_file = open(directory + "analysis.msg", "w")
+        self._message_file = open(directory_h + "analysis.msg", "w")
 
     def _create_output_files(self, _data_handling):
         '''
@@ -376,8 +379,7 @@ class Darcy_CVFEM():
                     if all(item in self._inlets[i]['nodes'] for item in entity):
                         width = width + edge.length()/2
                 area = width*self._h[node]
-                self._vel_inlet[node] = self._inlets[i]['value']/area
-            
+                self._vel_inlet[node] = self._inlets[i]['value']/area            
         
         v2d = fe.vertex_to_dof_map(self._QQ)
         self._vel_exp = fe.Function(self._QQ)
@@ -759,6 +761,7 @@ class Darcy_CVFEM():
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
                 self._flowfrontfile << ffvstimeh
+                time.sleep(3)
                 return 0
             elif numerator == self._max_nofiteration:
                 for i in set(range(self._num_nodes)) - available_nodes:
@@ -768,6 +771,7 @@ class Darcy_CVFEM():
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
                 self._flowfrontfile << ffvstimeh
+                time.sleep(3)
                 return 0
             elif t > TEND:
                 for i in set(range(self._num_nodes)) - available_nodes:
@@ -778,6 +782,7 @@ class Darcy_CVFEM():
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
                 self._flowfrontfile << ffvstimeh
+                time.sleep(3)
                 return 0
             elif self._termination_para > self._Number_consecutive_steps:
                 for i in set(range(self._num_nodes)) - available_nodes:
@@ -788,6 +793,7 @@ class Darcy_CVFEM():
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
                 self._flowfrontfile << ffvstimeh
+                time.sleep(3)
                 return 0
             elif self._Outlet_filled == True and self._termination_type == 'Fill the outlet':
                 for i in set(range(self._num_nodes)) - available_nodes:
@@ -797,6 +803,7 @@ class Darcy_CVFEM():
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
                 self._flowfrontfile << ffvstimeh
+                time.sleep(3)
                 return 0
 
             facet_on_flow_front = set()
