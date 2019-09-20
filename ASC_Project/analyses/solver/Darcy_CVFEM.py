@@ -80,6 +80,7 @@ class Darcy_CVFEM():
         self._boundaryfile = fe.File(_data_handling['folder_address'] + "/results/boundaries.pvd")
         self._materialfile = fe.File(_data_handling['folder_address'] + "/results/materials.pvd")
         self._flowfrontfile = fe.File(_data_handling['folder_address'] + "/results/flowfrontvstime.pvd")
+        self._highpressurefile = fe.File(_data_handling['folder_address'] + "/results/highpressure.pvd")
         self._normalsfile = fe.File(_data_handling['folder_address'] + "/hidden_files/cellnormals.pvd")
 
         self._message_file.write("File handlers created Successfully.\n")
@@ -277,6 +278,7 @@ class Darcy_CVFEM():
 
         # Define vector unknowns
         self._saturation = np.zeros(self._num_nodes) # Saturation vector
+        self._highpressure = np.zeros(self._num_nodes) # Saturation vector
         self._delta_saturation = np.zeros(self._num_nodes) # growth of saturation in one step
         if self._dim == 2:
             self._vel = np.zeros((self._num_nodes, 2)) # Velocity Vector
@@ -557,6 +559,7 @@ class Darcy_CVFEM():
         p = self._pre_test_function
         q = self._pre_trial_function
         S = self._saturation
+        HP = self._highpressure
         delta_S = self._delta_saturation
         V = self._vel
         FFvsTime = self._FFvsTime
@@ -658,10 +661,13 @@ class Darcy_CVFEM():
         sh = fe.Function(QQ)
         ffvstimeh = fe.Function(QQ)
         sh.rename("Saturation", "")
+        hpcontour = fe.Function(QQ)
+        hpcontour.rename("HighPressureContour", "")
         ffvstimeh.rename("FlowfrontvsTime", "")
         v2d = fe.vertex_to_dof_map(QQ)
         for i in range(len(S)):
             sh.vector()[v2d[i]] = S[i]
+            HP[i] = ph.vector()[v2d[i]]
 
         # e) plot solution and write output file
         self._resultsfile.write(ph, t)
@@ -721,6 +727,7 @@ class Darcy_CVFEM():
                 for c in fe.cells(fe.MeshEntity(mesh, mesh.topology().dim(), i)):
                     for v_i in c.entities(0):
                         sh.vector()[v2d[v_i]] = S[v_i]
+                        HP[v_i] = max(ph.vector()[v2d[v_i]], HP[v_i])
 
             # finding available cells and time-step for next step
             nodes_on_flow_front = set()
@@ -760,7 +767,9 @@ class Darcy_CVFEM():
                 progress.update_state(state="SUCCESS",  meta={'message':'All CVs are filled! <br>' })
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
+                    hpcontour.vector()[v2d[i]] = HP[i]
                 self._flowfrontfile << ffvstimeh
+                self._highpressurefile << hpcontour
                 time.sleep(3)
                 return 0
             elif numerator == self._max_nofiteration:
@@ -770,7 +779,9 @@ class Darcy_CVFEM():
                 progress.update_state(state="TERMINATE",  meta={'message':'Maximum iteration number ' + str(self._max_nofiteration) + ' is reached! <br>' })
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
+                    hpcontour.vector()[v2d[i]] = HP[i]
                 self._flowfrontfile << ffvstimeh
+                self._highpressurefile << hpcontour
                 time.sleep(3)
                 return 0
             elif t > TEND:
@@ -781,7 +792,9 @@ class Darcy_CVFEM():
                 progress.update_state(state="TERMINATE",  meta={'message':'Maximum filling time is reached! <br>' })
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
+                    hpcontour.vector()[v2d[i]] = HP[i]
                 self._flowfrontfile << ffvstimeh
+                self._highpressurefile << hpcontour
                 time.sleep(3)
                 return 0
             elif self._termination_para > self._Number_consecutive_steps:
@@ -792,7 +805,9 @@ class Darcy_CVFEM():
                 print({'message':'<br> Saturation halted for ' + str(self._termination_para) + ' iterations! <br>' })
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
+                    hpcontour.vector()[v2d[i]] = HP[i]
                 self._flowfrontfile << ffvstimeh
+                self._highpressurefile << hpcontour
                 time.sleep(3)
                 return 0
             elif self._Outlet_filled == True and self._termination_type == 'Fill the outlet':
@@ -802,7 +817,9 @@ class Darcy_CVFEM():
                 progress.update_state(state="SUCCESS",  meta={'message':'All outlet nodes are filled! <br>' })
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
+                    hpcontour.vector()[v2d[i]] = HP[i]
                 self._flowfrontfile << ffvstimeh
+                self._highpressurefile << hpcontour
                 time.sleep(3)
                 return 0
 
