@@ -353,6 +353,7 @@ def preform_page(request, slug):
                 if Preform.objects.filter(name=val['name']).exists():
                     Preform.objects.filter(name=val['name']).delete()
                     messages.warning(request, "Preform '{}' is updated!".format(val['name']))
+                messages.get_messages(request).used = True
                 preform.save()
                 form = NewPreformForm(
                     initial={'name': "Preform_{}".format(len(analysis.preform.all())+1)})

@@ -1,31 +1,31 @@
 var CeleryProgressBar = (function () {
-    function onSuccessDefault(progressBarElement, progressBarMessageElement,gifElement, progress) {
+    function onSuccessDefault(progressBarElement, progressBarMessageElement, gifElement, progress) {
         progressBarElement.style.backgroundColor = '#76ce60';
         progressBarElement.style.width = 100 + "%";
         progressBarMessageElement.innerHTML = progress.message;
-        gifElement.src='/static/success.gif/';
+        gifElement.src = '/static/success.gif/';
     }
 
-    function onTerminateDefault(progressBarElement, progressBarMessageElement,gifElement, progress) {
+    function onTerminateDefault(progressBarElement, progressBarMessageElement, gifElement, progress) {
         progressBarElement.style.backgroundColor = '#ffff2e';
         progressBarElement.style.width = 100 + "%";
         progressBarMessageElement.innerHTML = progress.message;
-        gifElement.src='/static/terminate.gif/';
+        gifElement.src = '/static/terminate.gif/';
     }
 
     function onErrorDefault(progressBarElement, progressBarMessageElement) {
         progressBarElement.style.backgroundColor = '#dc4f63';
         progressBarMessageElement.innerHTML = progress.message;
-        gifElement.src='/static/error.gif/';
+        gifElement.src = '/static/error.gif/';
     }
 
     function onProgressDefault(progressBarElement, progressBarMessageElement, progress) {
         progressBarElement.style.backgroundColor = '#68a9ef';
-        progressBarElement.style.width = progress.percent*100 + "%";
+        progressBarElement.style.width = progress.percent * 100 + "%";
         progressBarMessageElement.innerHTML = 'Iteration No: ' + progress.iteration + ' <br>' + progress.numOfFilled + ' cells of the total ' + progress.numofCells + ' are filled.' + ' <br>' + 'Current time: ' + progress.fill_time;
     }
 
-    function updateProgress (progressUrl, options) {
+    function updateProgress(progressUrl, options) {
         options = options || {};
         var progressBarId = options.progressBarId || 'progress-bar';
         var progressBarMessage = options.progressBarMessageId || 'progress-bar-message';
@@ -37,24 +37,23 @@ var CeleryProgressBar = (function () {
         var onTerminate = options.onTerminate || onTerminateDefault;
         var onError = options.onError || onErrorDefault;
         var pollInterval = options.pollInterval || 2000;
-        
 
-        fetch(progressUrl).then(function(response) {
-            response.json().then(function(data) {
-                if (data.state === 'PROGRESS') { 
+
+        fetch(progressUrl).then(function (response) {
+            response.json().then(function (data) {
+                if (data.state === 'PROGRESS') {
                     onProgress(progressBarElement, progressBarMessageElement, data.details);
                 }
-                if (data.state === 'ERROR') {
-                    onError(progressBarElement, progressBarMessageElement, gifElement, data.details);
-                }
-                if (data.state === 'TERMINATE') {
-                    onTerminate(progressBarElement, progressBarMessageElement, gifElement, data.details);
-                } 
-                if (data.state === 'SUCCESS') {
-                    onSuccess(progressBarElement, progressBarMessageElement, gifElement, data.details);
-                }
-                if (data.state !== 'SUCCESS') {
+                if (data.state !== 'COMPLETE') {
                     setTimeout(updateProgress, pollInterval, progressUrl, options);
+                } else {
+
+                    if (data.state === 'ERROR') {
+                        onError(progressBarElement, progressBarMessageElement, gifElement, data.details);
+                    }
+                    if (data.state === 'SUCCESS') {
+                        onSuccess(progressBarElement, progressBarMessageElement, gifElement, data.details);
+                    }
                 }
             });
         });
