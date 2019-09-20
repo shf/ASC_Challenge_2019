@@ -80,7 +80,7 @@ class Darcy_CVFEM():
         self._boundaryfile = fe.File(_data_handling['folder_address'] + "/results/boundaries.pvd")
         self._materialfile = fe.File(_data_handling['folder_address'] + "/results/materials.pvd")
         self._flowfrontfile = fe.File(_data_handling['folder_address'] + "/results/flowfrontvstime.pvd")
-#        self._normalsfile = fe.File(_data_handling['folder_address'] + "/results/cellnormals.pvd")
+        self._normalsfile = fe.File(_data_handling['folder_address'] + "/hidden_files/cellnormals.pvd")
 
         self._message_file.write("File handlers created Successfully.\n")
 
@@ -208,7 +208,7 @@ class Darcy_CVFEM():
         nh = fe.project(self._normal_exp, self._XX)
         nh.rename("Normals", "")
 
-#        self._normalsfile << nh 
+        self._normalsfile << nh 
 
         v2d = fe.vertex_to_dof_map(self._QQ)
         self._h_exp = fe.Function(self._QQ)
