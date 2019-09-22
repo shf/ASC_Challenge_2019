@@ -43,18 +43,15 @@ var CeleryProgressBar = (function () {
             response.json().then(function (data) {
                 if (data.state === 'PROGRESS') {
                     onProgress(progressBarElement, progressBarMessageElement, data.details);
-                }
-                if (data.state !== 'COMPLETE') {
                     setTimeout(updateProgress, pollInterval, progressUrl, options);
-                } else {
-
-                    if (data.state === 'ERROR') {
-                        onError(progressBarElement, progressBarMessageElement, gifElement, data.details);
-                    }
-                    if (data.state === 'SUCCESS') {
-                        onSuccess(progressBarElement, progressBarMessageElement, gifElement, data.details);
-                    }
                 }
+                if (data.state === 'FAILURE') {
+                    onError(progressBarElement, progressBarMessageElement, gifElement, data.details);
+                }
+                if (data.state === 'SUCCESS') {
+                    onSuccess(progressBarElement, progressBarMessageElement, gifElement, data.details);
+                }
+
             });
         });
     }

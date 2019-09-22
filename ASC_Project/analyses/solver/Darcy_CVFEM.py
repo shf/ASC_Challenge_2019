@@ -9,6 +9,7 @@ import logging
 import os
 import sys
 import time
+from celery import states
 
 import fenics as fe
 import numpy as np
@@ -145,7 +146,7 @@ class Darcy_CVFEM():
                 self._k_global[i] = np.matmul(np.matmul(T,k_local),np.transpose(T))
         else:
             self._message_file.write('\nInternal Error: Mesh dimension is not accepted! \n')
-            progress.update_state(state="ERROR",  meta={'message': 'Internal Error! Check message file for more information!' })
+            progress.update_state(state=states.FAILURE,  meta={'message': 'Internal Error! Check message file for more information!' })
 
                 
         class Permeability(fe.UserExpression):
@@ -173,7 +174,7 @@ class Darcy_CVFEM():
                     values[8] = self.__k_global[ufc_cell.index][2][2]
                 else:
                     self._message_file.write('\nInternal Error: Mesh dimension is not accepted! \n')
-                    progress.update_state(state="ERROR",  meta={'message': 'Internal Error! Check message file for more information!' })
+                    progress.update_state(state=states.FAILURE,  meta={'message': 'Internal Error! Check message file for more information!' })
                     return 0
             
             def value_shape(self):
@@ -183,7 +184,7 @@ class Darcy_CVFEM():
                     return (3, 3)
                 else:
                     self._message_file.write('\nInternal Error: Mesh dimension is not accepted! \n')
-                    progress.update_state(state="ERROR",  meta={'message': 'Internal Error! Check message file for more information!' })
+                    progress.update_state(state=states.FAILURE,  meta={'message': 'Internal Error! Check message file for more information!' })
                     return 0
 
         self._k_exp = Permeability(self._materials, self._k_global, self._dim, degree=1)
@@ -286,7 +287,7 @@ class Darcy_CVFEM():
             self._vel = np.zeros((self._num_nodes, 3)) # Velocity Vector
         else:
             self._message_file.write('\nInternal Error: Mesh dimension is not accepted! \n')
-            progress.update_state(state="ERROR",  meta={'message': 'Internal Error! Check message file for more information!' })
+            progress.update_state(state=states.FAILURE,  meta={'message': 'Internal Error! Check message file for more information!' })
             return 0
         self._FFvsTime = np.zeros(self._num_nodes)
 
@@ -446,7 +447,7 @@ class Darcy_CVFEM():
             self._vel_medium = np.zeros((self._num_nodes, 3)) # Velocity Vector
         else:
             self._message_file.write('\nInternal Error: Mesh dimension is not accepted! \n')
-            progress.update_state(state="ERROR",  meta={'message': 'Internal Error! Check message file for more information!' })
+            progress.update_state(state=states.FAILURE,  meta={'message': 'Internal Error! Check message file for more information!' })
             return 0
         self._FFvsTime_medium = np.zeros(self._num_nodes)
 
@@ -491,7 +492,7 @@ class Darcy_CVFEM():
                                         normal = -normal
                                 else:
                                     self._message_file.write('\nInternal Error: Mesh dimension is not accepted! \n')
-                                    progress.update_state(state="ERROR",  meta={'message': 'Internal Error! Check message file for more information!' })
+                                    progress.update_state(state=states.FAILURE,  meta={'message': 'Internal Error! Check message file for more information!' })
                                     return 0
 
                                 vel = (V[v_i] + V[v_j])/2.0
@@ -531,7 +532,7 @@ class Darcy_CVFEM():
                                             normal = -normal
                                     else:
                                         self._message_file.write('\nInternal Error: Mesh dimension is not accepted! \n')
-                                        progress.update_state(state="ERROR",  meta={'message': 'Internal Error! Check message file for more information!' })
+                                        progress.update_state(state=states.FAILURE,  meta={'message': 'Internal Error! Check message file for more information!' })
 
                                     vel = (V[v_i] + V[v_j])/2.0
                                     flux = np.dot(vel, normal)*norm*h[v_i]
@@ -654,7 +655,7 @@ class Darcy_CVFEM():
                 V[int(d2v[3*i]/3), 2] = uh.vector()[3*i+2]
         else:
             self._message_file.write('\nInternal Error: Mesh dimension is not accepted! \n')
-            progress.update_state(state="ERROR",  meta={'message': 'Internal Error! Check message file for more information!' })
+            progress.update_state(state=states.FAILURE,  meta={'message': 'Internal Error! Check message file for more information!' })
         uh.rename("velocity", "")
 
         # d) assign saturation
@@ -701,7 +702,7 @@ class Darcy_CVFEM():
                         dt_new = min(dt_new, (dt*(1.0 - S[i])/(delta_S[i])))
             else:
                 self._message_file.write('\nInternal Error: Maximum saturation is less than 1.0! \n')
-                progress.update_state(state="ERROR",  meta={'message': 'Internal Error! Check message file for more information!' })
+                progress.update_state(state=states.FAILURE,  meta={'message': 'Internal Error! Check message file for more information!' })
 
             for i in range(num_nodes):
                 if delta_S[i] != 0.0:
@@ -764,19 +765,19 @@ class Darcy_CVFEM():
             # termination cases
             if len(available_nodes) == num_nodes and self._termination_type == 'Fill everywhere':
                 self._message_file.write('\nAll CVs are filled! \n')
-                progress.update_state(state="SUCCESS",  meta={'message':'All CVs are filled! <br>' })
+                progress.update_state(state=states.SUCCESS,  meta={'message':'All CVs are filled! <br>' })
+                
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
                     hpcontour.vector()[v2d[i]] = HP[i]
                 self._flowfrontfile << ffvstimeh
                 self._highpressurefile << hpcontour
                 time.sleep(3)
-                return 0
             elif numerator == self._max_nofiteration:
                 for i in set(range(self._num_nodes)) - available_nodes:
                     FFvsTime[i] = t
                 self._message_file.write('\nMaximum iteration number ' + str(self._max_nofiteration) + ' is reached! \n')
-                progress.update_state(state="TERMINATE",  meta={'message':'Maximum iteration number ' + str(self._max_nofiteration) + ' is reached! <br>' })
+                progress.update_state(state=states.TERMINATE,  meta={'message':'Maximum iteration number ' + str(self._max_nofiteration) + ' is reached! <br>' })
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
                     hpcontour.vector()[v2d[i]] = HP[i]
@@ -789,7 +790,7 @@ class Darcy_CVFEM():
                     FFvsTime[i] = t
                 message = '\nMaximum filling time is reached! \n'
                 self._message_file.write(message)
-                progress.update_state(state="TERMINATE",  meta={'message':'Maximum filling time is reached! <br>' })
+                progress.update_state(state=states.TERMINATE,  meta={'message':'Maximum filling time is reached! <br>' })
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
                     hpcontour.vector()[v2d[i]] = HP[i]
@@ -814,7 +815,7 @@ class Darcy_CVFEM():
                 for i in set(range(self._num_nodes)) - available_nodes:
                     FFvsTime[i] = t
                 self._message_file.write('\nAll outlet nodes are filled! \n')
-                progress.update_state(state="SUCCESS",  meta={'message':'All outlet nodes are filled! <br>' })
+                progress.update_state(state=states.SUCCESS,  meta={'message':'All outlet nodes are filled! <br>' })
                 for i in range(len(FFvsTime)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
                     hpcontour.vector()[v2d[i]] = HP[i]
@@ -908,6 +909,6 @@ class Darcy_CVFEM():
 ### SOLVE HP RTM
     def solve_hprtm(self, progress):
         self._message_file.write('\nThis capability has not been implemented yet! \n')
-        progress.update_state(state="ERROR",  meta={'message': 'Internal Error! Check message file for more information!' })
+        progress.update_state(state=states.FAILURE,  meta={'message': 'Internal Error! Check message file for more information!' })
 
         
