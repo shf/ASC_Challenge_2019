@@ -662,13 +662,14 @@ class Darcy_CVFEM():
         sh = fe.Function(QQ)
         ffvstimeh = fe.Function(QQ)
         sh.rename("Saturation", "")
-        hpcontour = fe.Function(QQ)
+        hpcontour = fe.Function(ZZ)
         hpcontour.rename("HighPressureContour", "")
         ffvstimeh.rename("FlowfrontvsTime", "")
         v2d = fe.vertex_to_dof_map(QQ)
-        for i in range(len(S)):
+        v2d_zz = ZZ.dofmap().entity_dofs(self._mesh, 0)
+        for i in range(num_nodes):
             sh.vector()[v2d[i]] = S[i]
-            HP[i] = ph.vector()[v2d[i]]
+            HP[i] = ph.vector()[v2d_zz[i]]
 
         # e) plot solution and write output file
         self._resultsfile.write(ph, t)
@@ -728,7 +729,6 @@ class Darcy_CVFEM():
                 for c in fe.cells(fe.MeshEntity(mesh, mesh.topology().dim(), i)):
                     for v_i in c.entities(0):
                         sh.vector()[v2d[v_i]] = S[v_i]
-                        HP[v_i] = max(ph.vector()[v2d[v_i]], HP[v_i])
 
             # finding available cells and time-step for next step
             nodes_on_flow_front = set()
@@ -766,10 +766,9 @@ class Darcy_CVFEM():
             if len(available_nodes) == num_nodes and self._termination_type == 'Fill everywhere':
                 self._message_file.write('\nAll CVs are filled! \n')
                 progress.update_state(state=states.SUCCESS,  meta={'message':'All CVs are filled! <br>' })
-                
-                for i in range(len(FFvsTime)):
+                for i in range(len(num_nodes)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
-                    hpcontour.vector()[v2d[i]] = HP[i]
+                    hpcontour.vector()[v2d_zz[i]] = HP[i]
                 self._flowfrontfile << ffvstimeh
                 self._highpressurefile << hpcontour
                 time.sleep(3)
@@ -777,10 +776,10 @@ class Darcy_CVFEM():
                 for i in set(range(self._num_nodes)) - available_nodes:
                     FFvsTime[i] = t
                 self._message_file.write('\nMaximum iteration number ' + str(self._max_nofiteration) + ' is reached! \n')
-                progress.update_state(state=states.TERMINATE,  meta={'message':'Maximum iteration number ' + str(self._max_nofiteration) + ' is reached! <br>' })
-                for i in range(len(FFvsTime)):
+                progress.update_state(state=states.SUCCESS,  meta={'message':'Maximum iteration number ' + str(self._max_nofiteration) + ' is reached! <br>' })
+                for i in range(len(num_nodes)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
-                    hpcontour.vector()[v2d[i]] = HP[i]
+                    hpcontour.vector()[v2d_zz[i]] = HP[i]
                 self._flowfrontfile << ffvstimeh
                 self._highpressurefile << hpcontour
                 time.sleep(3)
@@ -790,10 +789,10 @@ class Darcy_CVFEM():
                     FFvsTime[i] = t
                 message = '\nMaximum filling time is reached! \n'
                 self._message_file.write(message)
-                progress.update_state(state=states.TERMINATE,  meta={'message':'Maximum filling time is reached! <br>' })
-                for i in range(len(FFvsTime)):
+                progress.update_state(state=states.SUCCESS,  meta={'message':'Maximum filling time is reached! <br>' })
+                for i in range(len(num_nodes)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
-                    hpcontour.vector()[v2d[i]] = HP[i]
+                    hpcontour.vector()[v2d_zz[i]] = HP[i]
                 self._flowfrontfile << ffvstimeh
                 self._highpressurefile << hpcontour
                 time.sleep(3)
@@ -803,10 +802,9 @@ class Darcy_CVFEM():
                     FFvsTime[i] = t
                 self._message_file.write('\nSaturation halted for ' + str(self._termination_para) + ' iterations! \n')
                 progress.update_state(state="TERMINATE",  meta={'message':'Saturation halted for ' + str(self._termination_para) + ' iterations! <br>' })
-                print({'message':'<br> Saturation halted for ' + str(self._termination_para) + ' iterations! <br>' })
-                for i in range(len(FFvsTime)):
+                for i in range(num_nodes):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
-                    hpcontour.vector()[v2d[i]] = HP[i]
+                    hpcontour.vector()[v2d_zz[i]] = HP[i]
                 self._flowfrontfile << ffvstimeh
                 self._highpressurefile << hpcontour
                 time.sleep(3)
@@ -816,9 +814,9 @@ class Darcy_CVFEM():
                     FFvsTime[i] = t
                 self._message_file.write('\nAll outlet nodes are filled! \n')
                 progress.update_state(state=states.SUCCESS,  meta={'message':'All outlet nodes are filled! <br>' })
-                for i in range(len(FFvsTime)):
+                for i in range(len(num_nodes)):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
-                    hpcontour.vector()[v2d[i]] = HP[i]
+                    hpcontour.vector()[v2d_zz[i]] = HP[i]
                 self._flowfrontfile << ffvstimeh
                 self._highpressurefile << hpcontour
                 time.sleep(3)
@@ -875,6 +873,9 @@ class Darcy_CVFEM():
 
                 fe.solve(a == L, ph, bcs + bc_flowfront)
                 ph.rename("Pressure", "")
+
+                for i in range(num_nodes):
+                    HP[i] = max(ph.vector()[v2d_zz[i]], HP[i])
 
                 # postprocess velocity
                 uh = fe.project(-k_exp/mu_exp*fe.grad(ph), XX)
