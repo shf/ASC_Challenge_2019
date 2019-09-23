@@ -743,7 +743,7 @@ class Darcy_CVFEM():
             for i in set(range(num_nodes)) - available_nodes:
                 if S[i] > self._Saturation_threshold:
                     available_nodes.add(i)
-
+                    
             # find available domains
             for i in available_nodes - available_nodes_old:
                 for c in fe.cells(fe.MeshEntity(mesh, mesh.topology().dim()-2, i)):
@@ -766,18 +766,19 @@ class Darcy_CVFEM():
             if len(available_nodes) == num_nodes and self._termination_type == 'Fill everywhere':
                 self._message_file.write('\nAll CVs are filled! \n')
                 progress.update_state(state=states.SUCCESS,  meta={'message':'All CVs are filled! <br>' })
-                for i in range(len(num_nodes)):
+                for i in range(num_nodes):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
                     hpcontour.vector()[v2d_zz[i]] = HP[i]
                 self._flowfrontfile << ffvstimeh
                 self._highpressurefile << hpcontour
                 time.sleep(3)
+                return 0
             elif numerator == self._max_nofiteration:
                 for i in set(range(self._num_nodes)) - available_nodes:
                     FFvsTime[i] = t
                 self._message_file.write('\nMaximum iteration number ' + str(self._max_nofiteration) + ' is reached! \n')
                 progress.update_state(state=states.SUCCESS,  meta={'message':'Maximum iteration number ' + str(self._max_nofiteration) + ' is reached! <br>' })
-                for i in range(len(num_nodes)):
+                for i in range(num_nodes):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
                     hpcontour.vector()[v2d_zz[i]] = HP[i]
                 self._flowfrontfile << ffvstimeh
@@ -790,7 +791,7 @@ class Darcy_CVFEM():
                 message = '\nMaximum filling time is reached! \n'
                 self._message_file.write(message)
                 progress.update_state(state=states.SUCCESS,  meta={'message':'Maximum filling time is reached! <br>' })
-                for i in range(len(num_nodes)):
+                for i in range(num_nodes):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
                     hpcontour.vector()[v2d_zz[i]] = HP[i]
                 self._flowfrontfile << ffvstimeh
@@ -814,7 +815,7 @@ class Darcy_CVFEM():
                     FFvsTime[i] = t
                 self._message_file.write('\nAll outlet nodes are filled! \n')
                 progress.update_state(state=states.SUCCESS,  meta={'message':'All outlet nodes are filled! <br>' })
-                for i in range(len(num_nodes)):
+                for i in range(num_nodes):
                     ffvstimeh.vector()[v2d[i]] = FFvsTime[i]
                     hpcontour.vector()[v2d_zz[i]] = HP[i]
                 self._flowfrontfile << ffvstimeh
@@ -839,6 +840,9 @@ class Darcy_CVFEM():
         #   Check if the domain is change to solve for pressure
             if available_cells_old != available_cells:
                 numerator += 1
+
+                progress.update_state(state="PROGRESS",  meta={'iteration': numerator, 'fill_time': round(t,4), 'percent':(len(available_nodes)/self._num_nodes), 'numOfFilled':len(available_nodes), 'numofCells':self._num_nodes})
+
                 self._message_file.write('\nSOLUTION OF THE LINEAR PROBLEM')
                 self._message_file.write('\nStep: ' + str(numerator) + ', time:' + str(t) + '\n')
 
@@ -902,10 +906,6 @@ class Darcy_CVFEM():
                 self._domainfile << (domains, t)
                 self._boundaryfile << (boundaries, t)
                 self._materialfile << (materials, t)
-
-                progress.update_state(state="PROGRESS",  meta={'iteration': numerator, 'fill_time': round(t,2), 'percent':(len(available_nodes)/self._num_nodes), 'numOfFilled':len(available_nodes), 'numofCells':self._num_nodes})
-
-
 
 ### SOLVE HP RTM
     def solve_hprtm(self, progress):

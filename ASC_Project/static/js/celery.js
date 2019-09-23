@@ -2,8 +2,9 @@ var CeleryProgressBar = (function () {
     function onSuccessDefault(progressBarElement, progressBarMessageElement, gifElement, progress) {
         progressBarElement.style.backgroundColor = '#76ce60';
         progressBarElement.style.width = 100 + "%";
-        progressBarMessageElement.innerHTML = progress.message;
         gifElement.src = '/static/success.gif/';
+        progressBarMessageElement.innerHTML = progress.message;
+        console.log('kosse ammat')
     }
 
     function onTerminateDefault(progressBarElement, progressBarMessageElement, gifElement, progress) {
@@ -43,12 +44,13 @@ var CeleryProgressBar = (function () {
             response.json().then(function (data) {
                 if (data.state === 'PROGRESS') {
                     onProgress(progressBarElement, progressBarMessageElement, data.details);
-                    setTimeout(updateProgress, pollInterval, progressUrl, options);
                 }
                 if (data.state === 'FAILURE') {
                     onError(progressBarElement, progressBarMessageElement, gifElement, data.details);
                 }
-                if (data.state === 'SUCCESS') {
+                if (data.state !== 'SUCCESS') {
+                    setTimeout(updateProgress, pollInterval, progressUrl, options);
+                } else{
                     onSuccess(progressBarElement, progressBarMessageElement, gifElement, data.details);
                 }
 

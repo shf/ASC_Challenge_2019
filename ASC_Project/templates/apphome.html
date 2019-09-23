@@ -72,7 +72,7 @@
         {% for items in analysis|dictsort:"name"  %}
         <div class="d-flex">
             <dt class="col-sm-6"><a href="../{{items.name}}/meshdisplay/"> {{items.name}}</a></dt>
-            <dd class="col-sm-6">{{items.name}}</dd>
+            <dd class="col-sm-6">{{items.description}}</dd>
         </div>
         {% endfor %}
       </div>
