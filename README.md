@@ -1,6 +1,6 @@
-# Composites of Clouds
+# Composites on Clouds
 
-Composite on Clouds (CoC) is a web-based open-source finite element tool for analysis of filling pattern and filling time of composite preforms in high-pressure RTM processes designed to address the second problem in [ASC challenge 2019](http://asc-student-challenge.appspot.com/). The web-framework is based on Django, a fast and versatile framework developed with Python. The finite element solver is developed using FEniCS, a next-generation computing platform for solving partial differential equations with high-level Python and C++ interfaces and high-performance and parallel-computing capabilities. The visualization utilizes open-source Python libraries and Paraview.
+Composites on Clouds (CoC) is a web-based open-source finite element tool for analysis of filling pattern and filling time of composite preforms in high-pressure RTM processes designed to address the second problem in [ASC challenge 2019](http://asc-student-challenge.appspot.com/). The web-framework is based on Django, a fast and versatile framework developed with Python. The finite element solver is developed using FEniCS, a next-generation computing platform for solving partial differential equations with high-level Python and C++ interfaces and high-performance and parallel-computing capabilities. The visualization utilizes open-source Python libraries and Paraview.
 
 To start using CoC, please take a look at our [test cases and examples](https://github.com/shf/ASC_Challenge_2019/wiki/Tests-and-Examples).
 
