@@ -215,7 +215,7 @@ def home(request):
             if val['btn'] == 'run':
                 return redirect('apphome')
             elif val['btn'] == 'docs':
-                return redirect("https://github.com/shf/ASC_Challenge/wiki")
+                return redirect("https://github.com/shf/ASC_Challenge_2019/wiki")
     else:
         form = StartApp()
     return render(request, 'home.html')
