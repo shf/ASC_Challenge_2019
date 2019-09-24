@@ -1,7 +1,7 @@
 autopep8==1.4.4
 celery==4.3.0
 colorlover==0.3.0
-Django==2.2.1
+Django==2.2.4
 django-cleanup==4.0.0
 django-celery-results==1.1.2
 django-extensions==2.1.6
@@ -28,7 +28,7 @@ qtconsole==4.4.3
 queuelib==1.5.0
 redis==3.3.8
 retrying==1.3.3
-requests==2.18.4
+requests==2.20.0
 scipy==1.2.1
 six==1.12.0
 sqlparse==0.3.0
