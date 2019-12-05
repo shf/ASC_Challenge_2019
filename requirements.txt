@@ -1,7 +1,7 @@
 autopep8==1.4.4
 celery==4.3.0
 colorlover==0.3.0
-Django==2.2.4
+Django==2.2.8
 django-cleanup==4.0.0
 django-celery-results==1.1.2
 django-extensions==2.1.6
