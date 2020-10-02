@@ -6,7 +6,7 @@ from time import sleep
 import numpy as np
 from celery import shared_task
 import os
-import shelve as sh
+import json as jsn
 
 @shared_task
 def create_conf(_id):
@@ -163,12 +163,7 @@ def print_conf(InputData):
     _directory = InputData['analysis']['folder_address']
     if not os.path.exists(_directory):
             os.makedirs(_directory)
-    _message_file = sh.open(_directory + "/config.db", "c")
-
-    for key in InputData.keys():
-        _message_file[key] = InputData[key]
-
-    _message_file.close()
+    jsn.dump(InputData, open(_directory + "/config.json", "w"))
 
 @shared_task (bind=True)
 def solver_rtm(progress,_id):
