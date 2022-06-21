@@ -16,7 +16,7 @@ future==0.17.1
 imageio==2.5.0
 mpmath==1.1.0
 mshr==2019.1.0
-numpy==1.16.4
+numpy==1.22.0
 pep8==1.7.1
 pipenv==2018.11.26
 pkgconfig==1.5.1
